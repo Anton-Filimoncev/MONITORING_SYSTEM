@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from Road_map import *
 
-st.set_page_config(page_icon='💵')
+st.set_page_config(page_icon='💵', page_title="Monitoring" )
 # ---- HIDE STREAMLIT STYLE ----
 # # MainMenu {visibility: hidden;}
 # header {visibility: hidden;}
