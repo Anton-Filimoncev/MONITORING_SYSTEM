@@ -158,13 +158,13 @@ def update_postion(csv_position_df, pos_type, risk_rate):
         print(quotes_df)
         postion_df['DAYS_remaining'] = (datetime.datetime.strptime(postion_df['Exp_date'].iloc[0], '%Y-%m-%d') - datetime.datetime.now()).days
         postion_df['DAYS_elapsed_TDE'] = postion_df['DTE'] - postion_df['DAYS_remaining']
-        postion_df['%_days_elapsed'] = postion_df['DAYS_elapsed_TDE'] / postion_df['DTE']
+        postion_df['%_days_elapsed'] = (postion_df['DAYS_elapsed_TDE'] / postion_df['DTE']) * 100
         postion_df['Prime_now'] = quotes_df['ask']
         postion_df['Cost_to_close_Market_cost'] = (postion_df['Number_pos'] * quotes_df['ask']) * 100
         postion_df['Current_Margin'] = np.max([0.2 * current_price - (current_price - postion_df['Strike']), 0.1 * postion_df['Strike']]) * postion_df['Number_pos'].abs() * 100
         postion_df['Current_PL'] = postion_df['Cost_to_close_Market_cost'] - postion_df['Open_cost']
-        postion_df['Current_ROI'] = postion_df['Current_PL'] / postion_df['Current_Margin']
-        postion_df['Current_RR_ratio'] = (postion_df['Max_profit'] - postion_df['Current_PL']) / (postion_df['Max_Risk'] + postion_df['Current_PL'])
+        postion_df['Current_ROI'] = (postion_df['Current_PL'] / postion_df['Current_Margin']) * 100
+        postion_df['Current_RR_ratio'] = ((postion_df['Max_profit'] - postion_df['Current_PL']) / (postion_df['Max_Risk'] + postion_df['Current_PL'])) * 100
         postion_df['PL_TDE'] = postion_df['Current_PL'] / postion_df['DAYS_elapsed_TDE']
         postion_df['Leverage'] = (quotes_df['delta'] * current_price) / postion_df['Current_Margin']
         postion_df['Margin_2S_Down'] = np.max([0.1 * postion_df['Strike'], postion_df['Price_2s_down'] * 0.2 - (postion_df['Price_2s_down'] - postion_df['Strike'])]) * postion_df['Number_pos'].abs() * 100
