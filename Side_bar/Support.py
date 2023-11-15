@@ -109,17 +109,17 @@ def create_new_postion(input_new_df, path, risk_rate):
         new_position_df['Number_pos'] = input_new_df['Number_pos_o_p'] * -1
         new_position_df['Start_prime'] = input_new_df['Prime_o_p']
         new_position_df['Contract'] = get_contract(new_position_df, ticker)
-        new_position_df['Start_price'] = [start_price]
+        new_position_df['Start_price'] =  input_new_df['Start_price']
         new_position_df['Dividend'] = input_new_df['Dividend']
         new_position_df['Commission'] = input_new_df['Commission_o_p']
         new_position_df['Margin_start'] = input_new_df['Margin_o_p']
         new_position_df['DTE'] = (new_position_df['Exp_date'] - new_position_df['Start_date']).values[0].days
-        new_position_df['Open_cost'] = (new_position_df['Number_pos'].iloc[0] * new_position_df['Start_prime']) * 100
+        new_position_df['Open_cost'] = (new_position_df['Number_pos'].iloc[0] * new_position_df['Start_prime'])*100
         new_position_df['Start_delta'] = input_new_df['Delta_o_p']
         new_position_df['HV_200'] = hv
         new_position_df['Price_2s_down'] = start_price - (2 * start_price * hv*(math.sqrt(new_position_df['DTE'].iloc[0]/365)))
         new_position_df['Max_profit'] = new_position_df['Open_cost'].abs()
-        new_position_df['Max_Risk'] = np.max([new_position_df['Strike'].iloc[0] * 0.1, new_position_df['Price_2s_down'].iloc[0] -(new_position_df['Price_2s_down'].iloc[0]-new_position_df['Strike'].iloc[0])]) *  new_position_df['Open_cost'].abs() * 100
+        new_position_df['Max_Risk'] = np.max([new_position_df['Strike'].iloc[0] * 0.1, (new_position_df['Price_2s_down'].iloc[0] - (new_position_df['Price_2s_down'].iloc[0]-new_position_df['Strike'].iloc[0]))*0.2]) * new_position_df['Open_cost'].abs() * 100
         new_position_df['BE_lower'] = new_position_df['Strike'] - new_position_df['Start_prime']
         new_position_df['RR_RATIO'] = new_position_df['Max_profit'] / new_position_df['Max_Risk']
         new_position_df['MP/DTE'] = new_position_df['Max_profit'] / new_position_df['DTE']
@@ -158,24 +158,24 @@ def update_postion(csv_position_df, pos_type, risk_rate):
         print(quotes_df)
         postion_df['DAYS_remaining'] = (datetime.datetime.strptime(postion_df['Exp_date'].iloc[0], '%Y-%m-%d') - datetime.datetime.now()).days
         postion_df['DAYS_elapsed_TDE'] = postion_df['DTE'] - postion_df['DAYS_remaining']
-        postion_df['%_days_elapsed'] = (postion_df['DAYS_elapsed_TDE'] / postion_df['DTE']) * 100
+        postion_df['%_days_elapsed'] = postion_df['DAYS_elapsed_TDE'] / postion_df['DTE']
         postion_df['Prime_now'] = quotes_df['ask']
         postion_df['Cost_to_close_Market_cost'] = (postion_df['Number_pos'] * quotes_df['ask']) * 100
         postion_df['Current_Margin'] = np.max([0.2 * current_price - (current_price - postion_df['Strike']), 0.1 * postion_df['Strike']]) * postion_df['Number_pos'].abs() * 100
         postion_df['Current_PL'] = postion_df['Cost_to_close_Market_cost'] - postion_df['Open_cost']
-        postion_df['Current_ROI'] = (postion_df['Current_PL'] / postion_df['Current_Margin']) * 100
-        postion_df['Current_RR_ratio'] = ((postion_df['Max_profit'] - postion_df['Current_PL']) / (postion_df['Max_Risk'] + postion_df['Current_PL'])) * 100
+        postion_df['Current_ROI'] = postion_df['Current_PL'] / postion_df['Current_Margin']
+        postion_df['Current_RR_ratio'] = (postion_df['Max_profit'] - postion_df['Current_PL']) / (postion_df['Max_Risk'] + postion_df['Current_PL'])
         postion_df['PL_TDE'] = postion_df['Current_PL'] / postion_df['DAYS_elapsed_TDE']
-        postion_df['Leverage'] = (quotes_df['delta'] * current_price) / postion_df['Current_Margin']
+        postion_df['Leverage'] = (quotes_df['delta'] * 100 * current_price) / postion_df['Current_Margin']
         postion_df['Margin_2S_Down'] = np.max([0.1 * postion_df['Strike'], postion_df['Price_2s_down'] * 0.2 - (postion_df['Price_2s_down'] - postion_df['Strike'])]) * postion_df['Number_pos'].abs() * 100
 
         pop_50, expected_profit, avg_dtc = get_proba_50_put(current_price, yahoo_price_df, postion_df['Strike'].iloc[0],
-                                                            postion_df['Start_prime'].iloc[0], quotes_df['iv'].iloc[0],
+                                                            postion_df['Start_prime'].iloc[0], quotes_df['iv'].iloc[0]*100,
                                                             postion_df['DAYS_remaining'].iloc[0], risk_rate)
-
-        postion_df['POP 50'] = pop_50
+        print('pop_50 ', pop_50, 'expected_profit ', expected_profit, 'avg_dtc ', avg_dtc,)
+        postion_df['POP_50'] = pop_50
         postion_df['Current_expected_return'] = expected_profit
-        postion_df['POP_50'] = avg_dtc
+        postion_df['DTE_Target'] = avg_dtc[0]
 
         P_below = stats.norm.cdf(
             (np.log(postion_df['BE_lower'].iloc[0] / current_price) / (
@@ -186,7 +186,11 @@ def update_postion(csv_position_df, pos_type, risk_rate):
         postion_df['MC_2S_Down'] = calculate_option_price('P', postion_df['Price_2s_down'].iloc[0],
                                   postion_df['Strike'].iloc[0], risk_rate, postion_df['HV_200'].iloc[0],
                                   postion_df['DAYS_remaining']) * postion_df['Number_pos'].abs() * 100
+
+        postion_df[['%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio',]] = postion_df[['%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio']] * 100
         postion_df = postion_df.round(2)
+
+        postion_df.to_csv(csv_position_df)
 
         current_position = postion_df[['DAYS_remaining', 'DAYS_elapsed_TDE', '%_days_elapsed',
                            'Cost_to_close_Market_cost', 'Current_Margin', 'Current_PL', 'Current_expected_return',

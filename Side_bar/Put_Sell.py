@@ -29,9 +29,14 @@ def put_sell():
             end_date_stat = st.date_input('EXP date')
         with col12:
             ticker = st.text_input('Ticker', '')
-            dividend = st.number_input('Dividend', step=0.01, format="%.1f", min_value=0., max_value=5000., value=0.1)
+            dividend = st.number_input('Dividend', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.01)
+            try:
+                start_b_a_price_yahoo = yf.download(ticker)['Close'].iloc[-1]
+            except:
+                start_b_a_price_yahoo = 0.
+            start_b_a_price = st.number_input('Start BA Price', step=0.1, format="%.2f", min_value=0., max_value=50000., value=start_b_a_price_yahoo)
         with col13:
-            prime_o_p = st.number_input('Prime', step=0.01, format="%.1f", min_value=0., max_value=5000.)
+            prime_o_p = st.number_input('Prime', step=0.01, format="%.2f", min_value=0., max_value=5000.)
             strike_o_p = st.number_input('Strike', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
             delta_o_p = st.number_input('Delta', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
 
@@ -56,6 +61,7 @@ def put_sell():
                 'Margin_o_p': [margin_o_p],
                 'Delta_o_p': [delta_o_p],
                 'Dividend': [dividend],
+                'Start_price': [start_b_a_price],
             })
             print('input_new_df')
             print(input_new_df)
