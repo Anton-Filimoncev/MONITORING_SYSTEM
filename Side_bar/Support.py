@@ -38,11 +38,22 @@ def strike_price(strike):
         out_strike = '0' + strike + '00'
     return out_strike
 
+def get_contract_calendar(new_position_df, ticker):
+    str_exp_date_long = new_position_df['Exp_date_long'].values[0].strftime('%Y-%m-%d').split('-')
+    contract_price = strike_price(new_position_df['Strike_long'].values[0])
+    contract_long = ticker + str_exp_date_long[0][-2:] + str_exp_date_long[1] + str_exp_date_long[2] + 'P' + contract_price
+
+    str_exp_date_short = new_position_df['Exp_date_short'].values[0].strftime('%Y-%m-%d').split('-')
+    contract_price = strike_price(new_position_df['Strike_short'].values[0])
+    contract_short = ticker + str_exp_date_short[0][-2:] + str_exp_date_short[1] + str_exp_date_short[
+        2] + 'P' + contract_price
+
+    return contract_long, contract_short
+
 def get_contract(new_position_df, ticker):
     str_exp_date = new_position_df['Exp_date'].values[0].strftime('%Y-%m-%d').split('-')
     contract_price = strike_price(new_position_df['Strike'].values[0])
     contract = ticker + str_exp_date[0][-2:] + str_exp_date[1] + str_exp_date[2] + 'P' + contract_price
-
     return contract
 
 def calculate_option_price(type_option, stock_price, strike, risk_rate, vol_opt, days_to_exp):
@@ -92,7 +103,11 @@ def create_new_postion(input_new_df, path, risk_rate):
     new_position_df = pd.DataFrame()
     pos_type = input_new_df['Position_type'].values[0]
     ticker = input_new_df['Symbol'].values[0]
+    print('/', ticker, '/')
+    print(ticker)
+    print(input_new_df['Symbol'].values)
     yahoo_price_df = yf.download(ticker)
+    print(yahoo_price_df)
     start_price = yahoo_price_df['Close'].iloc[-1]
     KEY = credential.password['marketdata_KEY']
     log_returns = np.log(yahoo_price_df["Close"] / yahoo_price_df["Close"].shift(1))
@@ -101,7 +116,6 @@ def create_new_postion(input_new_df, path, risk_rate):
     hv = hv.iloc[-1]
 
     if pos_type == 'Put Sell':
-
         new_position_df['Symbol'] = [ticker]
         new_position_df['Start_date'] = input_new_df['Start_date_o_p']
         new_position_df['Exp_date'] = input_new_df['Exp_date_o_p']
@@ -138,6 +152,52 @@ def create_new_postion(input_new_df, path, risk_rate):
         new_position_df['ROC_DAY_target'] = new_position_df['Plan_ROC '] / new_position_df['DTE_Target']
         #
         new_position_df.to_csv(f"{path}{ticker}_{new_position_df['Start_date'].values[0].strftime('%Y-%m-%d')}.csv", index=False)
+
+    if pos_type == 'ITM Calendar':
+        new_position_df['Symbol'] = [ticker]
+        new_position_df['Start_date'] = input_new_df['Start_date_o_p']
+        new_position_df['Exp_date_long'] = input_new_df['Exp_date_long_o_p']
+        new_position_df['Exp_date_short'] = input_new_df['Exp_date_short_o_p']
+        new_position_df['Strike_long'] = input_new_df['Strike_long_o_p']
+        new_position_df['Strike_short'] = input_new_df['Strike_short_o_p']
+        new_position_df['Number_pos'] = input_new_df['Number_pos_o_p']
+        new_position_df['Start_prime'] = input_new_df['Prime_o_p']
+        new_position_df['Contract_long'], new_position_df['Contract_short'] = get_contract_calendar(new_position_df, ticker)
+        new_position_df['Start_price'] = input_new_df['Start_price']
+        new_position_df['Dividend'] = input_new_df['Dividend']
+        new_position_df['Commission'] = input_new_df['Commission_o_p']
+        new_position_df['Margin_start'] = input_new_df['Margin_o_p']
+        new_position_df['DTE'] = (new_position_df['Exp_date_short'] - new_position_df['Start_date']).values[0].days
+        new_position_df['Open_cost'] = (new_position_df['Number_pos'].iloc[0] * new_position_df['Start_prime']) * 100
+        new_position_df['Start_delta'] = input_new_df['Delta_o_p']
+        new_position_df['HV_200'] = hv
+        new_position_df['Price_2s_down'] = start_price - (
+                    2 * start_price * hv * (math.sqrt(new_position_df['DTE'].iloc[0] / 365)))
+        new_position_df['Max_profit'] = new_position_df['Open_cost'].abs()
+        new_position_df['Max_Risk'] = input_new_df['Margin_o_p']
+        new_position_df['BE_lower'] = new_position_df['Start_prime']
+        new_position_df['RR_RATIO'] = new_position_df['Max_profit'] / new_position_df['Max_Risk']
+        new_position_df['MP/DTE'] = new_position_df['Max_profit'] / new_position_df['DTE']
+        new_position_df['Profit_Target'] = new_position_df['Max_profit'] * 0.5 - (new_position_df['Commission'])
+        print(new_position_df['Contract_long'].iloc[0])
+        print(new_position_df['Contract_short'].iloc[0])
+        quotes_df_long = market_data(new_position_df['Contract_long'].iloc[0], KEY)
+        quotes_df_short = market_data(new_position_df['Contract_short'].iloc[0], KEY)
+
+        # pop_50, expected_profit, avg_dtc = get_proba_50_put(start_price, yahoo_price_df,
+        #                                                     new_position_df['Strike'].iloc[0],
+        #                                                     new_position_df['Start_prime'].iloc[0],
+        #                                                     quotes_df['iv'].iloc[0],
+        #                                                     new_position_df['DTE'].iloc[0], risk_rate)
+        #
+        # new_position_df['Expected_Return'] = expected_profit
+        # new_position_df['DTE_Target'] = int(avg_dtc[0])
+        # new_position_df['POP_Monte_start_50'] = pop_50
+        # new_position_df['Plan_ROC '] = new_position_df['Profit_Target'] / new_position_df['Margin_start']
+        # new_position_df['ROC_DAY_target'] = new_position_df['Plan_ROC '] / new_position_df['DTE_Target']
+        #
+        new_position_df.to_csv(f"{path}{ticker}_{new_position_df['Start_date'].values[0].strftime('%Y-%m-%d')}.csv",
+                               index=False)
 
     return
 
@@ -197,19 +257,71 @@ def update_postion(csv_position_df, pos_type, risk_rate):
                            'Current_POP_lognormal', 'POP_50', 'Current_ROI', 'Current_RR_ratio', 'PL_TDE', 'Leverage',
                            'MC_2S_Down', 'Margin_2S_Down']].T
 
+        current_position['Values'] = current_position[0]
+        current_position['Name'] = current_position.index.values.tolist()
+        current_position = current_position[['Name', 'Values']]
+        current_position1 = current_position[int(len(current_position) / 2):].reset_index(drop=True)
+        current_position2 = current_position[:int(len(current_position) / 2)].reset_index(drop=True)
 
-    current_position['Values'] = current_position[0]
-    current_position['Name'] = current_position.index.values.tolist()
-    current_position = current_position[['Name', 'Values']]
-    current_position1 = current_position[int(len(current_position) / 2):].reset_index(drop=True)
-    current_position2 = current_position[:int(len(current_position) / 2)].reset_index(drop=True)
+        wight_df = pd.concat([current_position1, current_position2], axis=1, )
 
-    wight_df = pd.concat([current_position1, current_position2], axis=1, )
-    print(wight_df)
+        wight_df.columns = ['N1', 'V1', 'N2', 'V2']
+        pl, marg, pop_log = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0],  postion_df['Current_POP_lognormal'].iloc[0]
 
-    wight_df.columns = ['N1', 'V1', 'N2', 'V2']
-    pl, marg, pop_log = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0],  postion_df['Current_POP_lognormal'].iloc[0]
+        return wight_df, pl, marg, pop_log
 
-    return wight_df, pl, marg, pop_log
+    if pos_type == 'ITM Calendar':
+        quotes_df = market_data(postion_df['Contract'].iloc[0], KEY)
+        postion_df['DAYS_remaining'] = (datetime.datetime.strptime(postion_df['Exp_date'].iloc[0], '%Y-%m-%d') - datetime.datetime.now()).days
+        postion_df['DAYS_elapsed_TDE'] = postion_df['DTE'] - postion_df['DAYS_remaining']
+        postion_df['%_days_elapsed'] = postion_df['DAYS_elapsed_TDE'] / postion_df['DTE']
+        postion_df['Prime_now'] = quotes_df['ask']
+        postion_df['Cost_to_close_Market_cost'] = (postion_df['Number_pos'] * quotes_df['ask']) * 100
+        postion_df['Current_Margin'] = np.max([0.2 * current_price - (current_price - postion_df['Strike']), 0.1 * postion_df['Strike']]) * postion_df['Number_pos'].abs() * 100
+        postion_df['Current_PL'] = postion_df['Cost_to_close_Market_cost'] - postion_df['Open_cost']
+        postion_df['Current_ROI'] = postion_df['Current_PL'] / postion_df['Current_Margin']
+        postion_df['Current_RR_ratio'] = (postion_df['Max_profit'] - postion_df['Current_PL']) / (postion_df['Max_Risk'] + postion_df['Current_PL'])
+        postion_df['PL_TDE'] = postion_df['Current_PL'] / postion_df['DAYS_elapsed_TDE']
+        postion_df['Leverage'] = (quotes_df['delta'] * 100 * current_price) / postion_df['Current_Margin']
+        postion_df['Margin_2S_Down'] = np.max([0.1 * postion_df['Strike'], postion_df['Price_2s_down'] * 0.2 - (postion_df['Price_2s_down'] - postion_df['Strike'])]) * postion_df['Number_pos'].abs() * 100
 
-    # DAYS remaining
+        pop_50, expected_profit, avg_dtc = get_proba_50_put(current_price, yahoo_price_df, postion_df['Strike'].iloc[0],
+                                                            postion_df['Start_prime'].iloc[0], quotes_df['iv'].iloc[0]*100,
+                                                            postion_df['DAYS_remaining'].iloc[0], risk_rate)
+        print('pop_50 ', pop_50, 'expected_profit ', expected_profit, 'avg_dtc ', avg_dtc,)
+        postion_df['POP_50'] = pop_50
+        postion_df['Current_expected_return'] = expected_profit
+        postion_df['DTE_Target'] = avg_dtc[0]
+
+        P_below = stats.norm.cdf(
+            (np.log(postion_df['BE_lower'].iloc[0] / current_price) / (
+                    postion_df['HV_200'].iloc[0] * math.sqrt(postion_df['DAYS_remaining'].iloc[0] / 365))))
+
+        postion_df['Current_POP_lognormal'] = 1 - P_below
+
+        postion_df['MC_2S_Down'] = calculate_option_price('P', postion_df['Price_2s_down'].iloc[0],
+                                  postion_df['Strike'].iloc[0], risk_rate, postion_df['HV_200'].iloc[0],
+                                  postion_df['DAYS_remaining']) * postion_df['Number_pos'].abs() * 100
+
+        postion_df[['%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio',]] = postion_df[['%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio']] * 100
+        postion_df = postion_df.round(2)
+
+        postion_df.to_csv(csv_position_df)
+
+        current_position = postion_df[['DAYS_remaining', 'DAYS_elapsed_TDE', '%_days_elapsed',
+                           'Cost_to_close_Market_cost', 'Current_Margin', 'Current_PL', 'Current_expected_return',
+                           'Current_POP_lognormal', 'POP_50', 'Current_ROI', 'Current_RR_ratio', 'PL_TDE', 'Leverage',
+                           'MC_2S_Down', 'Margin_2S_Down']].T
+
+        current_position['Values'] = current_position[0]
+        current_position['Name'] = current_position.index.values.tolist()
+        current_position = current_position[['Name', 'Values']]
+        current_position1 = current_position[int(len(current_position) / 2):].reset_index(drop=True)
+        current_position2 = current_position[:int(len(current_position) / 2)].reset_index(drop=True)
+
+        wight_df = pd.concat([current_position1, current_position2], axis=1, )
+
+        wight_df.columns = ['N1', 'V1', 'N2', 'V2']
+        pl, marg, pop_log = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0],  postion_df['Current_POP_lognormal'].iloc[0]
+
+        return wight_df, pl, marg, pop_log
