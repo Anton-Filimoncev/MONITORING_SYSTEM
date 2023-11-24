@@ -55,7 +55,7 @@ if infoType == 'git test':
     PATH_OF_GIT_REPO = "https://github.com/Anton-Filimoncev/MONITORING_SYSTEM.git"
     COMMIT_MESSAGE = 'comment from python script'
 
-
+    #
     def git_push():
         # try:
         repo = Repo(search_parent_directories=True)
