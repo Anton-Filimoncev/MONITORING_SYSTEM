@@ -1,2 +1,0 @@
-Symbol,Start_date,Exp_date_long,Exp_date_short,Strike_long,Strike_short,Number_pos,Start_prime,Contract_long,Contract_short,Start_price,Dividend,Commission,Margin_start,DTE,Open_cost,Start_delta,HV_200,Price_2s_down,Max_profit,Max_Risk,BE_lower,RR_RATIO,MP/DTE,Profit_Target
-CVX,2023-10-19,2025-01-17,2024-06-21,185.0,185.0,1,0.0,CVX250117P00185000,CVX240621P00185000,0.0,0.01,6.04,0.0,246,0.0,100.0,0.2055583701629534,96.43208377697204,0.0,0.0,0.0,,0.0,-6.04

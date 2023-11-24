@@ -37,7 +37,8 @@ def itm_calendar():
             start_b_a_price_yahoo = 0.
             start_b_a_price = st.number_input('Start BA Price', step=0.1, format="%.2f", min_value=0., max_value=50000., value=start_b_a_price_yahoo)
         with col13:
-            prime_o_p = st.number_input('Prime', step=0.01, format="%.2f", min_value=0., max_value=5000.)
+            prime_long_o_p = st.number_input('Prime Long', step=0.01, format="%.2f", min_value=0., max_value=5000.)
+            prime_short_o_p = st.number_input('Prime Short', step=0.01, format="%.2f", min_value=0., max_value=5000.)
             strike_long_o_p = st.number_input('Strike Long', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
             strike_short_o_p = st.number_input('Strike Short', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
             delta_o_p = st.number_input('Delta', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
@@ -46,6 +47,7 @@ def itm_calendar():
             num_pos_o_p = st.number_input('Number of positions', min_value=1, max_value=365, value=1)
             commission_o_p = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=6.04)
             try:
+                prime_o_p = prime_short_o_p - prime_long_o_p
                 start_marg = num_pos_o_p * prime_o_p * 100
                 margin_o_p = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=start_marg)
             except:
@@ -64,7 +66,9 @@ def itm_calendar():
                 'Strike_long_o_p': [strike_long_o_p],
                 'Strike_short_o_p': [strike_short_o_p],
                 'Number_pos_o_p': [num_pos_o_p],
-                'Prime_o_p': [prime_o_p],
+                'Prime_short_o_p': [prime_short_o_p],
+                'Prime_long_o_p': [prime_long_o_p],
+                'Prime_o_p': [prime_short_o_p-prime_long_o_p],
                 'Commission_o_p': [commission_o_p],
                 'Margin_o_p': [margin_o_p],
                 'Delta_o_p': [delta_o_p],
