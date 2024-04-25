@@ -13,47 +13,49 @@ hide_st_style = """
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
+with st.sidebar.expander('FUTURES'):
+    st.write('Coming soon...')
+    infoType = st.radio(
+        "Choose an info type",
+        ('Portfolio', 'Market View', 'Put Sell', 'Call Sell', 'Strangle', 'OTM Calendar', 'ITM Calendar', 'git test') # 'Call Monitoring',
+    )
 
 
-infoType = st.sidebar.radio(
-    "Choose an info type",
-    ('Portfolio', 'Market View', 'Put Sell', 'Call Sell', 'Strangle', 'OTM Calendar', 'ITM Calendar', 'git test') # 'Call Monitoring',
-)
+    # =====================================   Portfolio
+    if infoType == 'Portfolio':
+        portfolio()
+
+    # =====================================   Portfolio
+    if infoType == 'Market View':
+        market_view()
+
+    # =====================================   Put Sell
+    if infoType == 'Put Sell':
+        put_sell()
+
+    # =====================================   Put Sell
+    if infoType == 'Call Sell':
+        call_sell()
+
+    # =====================================   Put Sell
+    if infoType == 'Strangle':
+        strangle()
+
+    # =====================================   Put Sell
+    if infoType == 'OTM Calendar':
+        otm_calendar()
+
+    # =====================================   Put Sell
+    if infoType == 'ITM Calendar':
+        itm_calendar()
+
+    # =====================================   Put Sell
+    if infoType == 'git test':
+        from git import Repo
+        PATH_OF_GIT_REPO = "https://github.com/Anton-Filimoncev/MONITORING_SYSTEM.git"
+        COMMIT_MESSAGE = 'comment from python script'
 
 
-# =====================================   Portfolio
-if infoType == 'Portfolio':
-    portfolio()
-
-# =====================================   Portfolio
-if infoType == 'Market View':
-    market_view()
-
-# =====================================   Put Sell
-if infoType == 'Put Sell':
-    put_sell()
-
-# =====================================   Put Sell
-if infoType == 'Call Sell':
-    call_sell()
-
-# =====================================   Put Sell
-if infoType == 'Strangle':
-    strangle()
-
-# =====================================   Put Sell
-if infoType == 'OTM Calendar':
-    otm_calendar()
-
-# =====================================   Put Sell
-if infoType == 'ITM Calendar':
-    itm_calendar()
-
-# =====================================   Put Sell
-if infoType == 'git test':
-    from git import Repo
-    PATH_OF_GIT_REPO = "https://github.com/Anton-Filimoncev/MONITORING_SYSTEM.git"
-    COMMIT_MESSAGE = 'comment from python script'
 
     #
     def git_push():

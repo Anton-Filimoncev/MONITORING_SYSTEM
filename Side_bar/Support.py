@@ -19,7 +19,6 @@ def get_tick_from_csv_name(csv_position_df):
     ticker_name = csv_position_df.split("/")[-1].split(".")[0]
     return ticker_name
 
-
 def strike_price(strike):
     if strike < 1:
         strike = str(strike).replace('.', '')
