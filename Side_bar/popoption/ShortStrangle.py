@@ -1,7 +1,6 @@
 from numba import jit
 import time
 from .MonteCarlo import monteCarlo
-from .MonteCarlo_SELL_PUT_RETURN import monteCarlo_exp_return
 import time
 from .BlackScholes import blackScholesPut, blackScholesCall
 import numpy as np
@@ -45,7 +44,7 @@ def shortStrangle(underlying, sigma, rate, trials, days_to_expiration,
     min_profit = np.array(min_profit)
 
     try:
-        pop, pop_error, avg_dtc, avg_dtc_error = monteCarlo(underlying, rate, sigma, days_to_expiration,
+        pop, pop_error, avg_dtc, avg_dtc_error, cvar = monteCarlo(underlying, rate, sigma, days_to_expiration,
                                                               closing_days_array, trials,
                                                               initial_credit, min_profit, strikes, bsm_debit, yahoo_stock)
     except RuntimeError as err:
@@ -58,8 +57,4 @@ def shortStrangle(underlying, sigma, rate, trials, days_to_expiration,
         "avg_dtc_error": avg_dtc_error
     }
 
-    exp_return = monteCarlo_exp_return(underlying, rate, sigma, days_to_expiration,
-                                                              closing_days_array, trials,
-                                                              initial_credit, min_profit, strikes, bsm_debit, yahoo_stock)
-
-    return pop[0] / 100, exp_return*100, avg_dtc
+    return pop[0]/100, cvar*100

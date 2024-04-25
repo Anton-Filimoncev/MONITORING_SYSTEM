@@ -21,7 +21,7 @@ def greeks():
     chrome_options = Options()
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument("--start-maximized")
-    # chrome_options.add_argument('headless')
+    chrome_options.add_argument('headless')
 
     checker = webdriver.Chrome(options=chrome_options)
 
@@ -122,15 +122,23 @@ def hist_vol_analysis(full_txt, ticker, exp_date):
     print(df)
     print('IV:', IV)
 
-    return df, IV
+    return df, float(IV)
 
 def greeks_start(ticker, exp_date):
+    ticker = ticker.split('=')[0]
     full_txt = greeks()
-    history_vol = hist_vol_analysis(full_txt, ticker, exp_date)
-    return history_vol
+    print(exp_date)
+    reformat_exp_date = exp_date.strftime('%m/%d/%Y')
+    reformat_exp_date_month = reformat_exp_date.split('/')[0].replace('0', ' ')
+    reformat_exp_date_day = reformat_exp_date.split('/')[1].replace('0', ' ')
+    reformat_exp_date_year = reformat_exp_date.split('/')[2]
+    reformat_exp_date = reformat_exp_date_month+'/'+reformat_exp_date_day+'/'+reformat_exp_date_year
+    print(reformat_exp_date)
+    df, IV = hist_vol_analysis(full_txt, ticker, reformat_exp_date)
+    return df, IV
 
 
-hist_vol_df = greeks_start()
+# hist_vol_df = greeks_start()
 
 
 

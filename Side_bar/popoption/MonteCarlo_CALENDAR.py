@@ -15,8 +15,9 @@ import math
 
 
 def monteCarlo(underlying, rate, sigma_short, sigma_long, days_to_expiration_short, days_to_expiration_long, closing_days_array, trials, initial_credit,
-                   min_profit, strikes, bsm_func, yahoo_stock):
-
+                   min_profit, strikes, bsm_func, yahoo_stock, short_count, long_count):
+    profit_list = []
+    price_list = []
     log_returns = np.log(1 + yahoo_stock['Close'].pct_change())
     # Define the variables
     u = log_returns.mean()
@@ -80,9 +81,11 @@ def monteCarlo(underlying, rate, sigma_short, sigma_long, days_to_expiration_sho
             time_fraction_short = dt * (days_to_expiration_short - r)
             time_fraction_long = dt * (days_to_expiration_long - r)
 
-            debit = bsm_func(stock_price, strikes, rate, time_fraction_short, time_fraction_long, sigma_short, sigma_long)
+            debit = bsm_func(stock_price, strikes, rate, time_fraction_short, time_fraction_long, sigma_short, sigma_long, short_count, long_count)
 
             profit = debit + initial_credit  # Profit if we were to close on current day
+            profit_list.append(profit)
+            price_list.append(stock_price)
 
             sum = 0
 
@@ -141,6 +144,11 @@ def monteCarlo(underlying, rate, sigma_short, sigma_long, days_to_expiration_sho
     avg_dtc = [round(x, 2) for x in avg_dtc]
 
     avg_dtc_error = [round(x, 2) for x in avg_dtc_error]
+    dist_df = pd.DataFrame({
+        'Stock_price': price_list,
+        'Profit': profit_list,
+    })
 
+    cvar = dist_df.sort_values('Profit')[:int(len(dist_df)*0.05)]['Profit'].mean()
 
-    return pop_counter1, pop_counter1_err, avg_dtc, avg_dtc_error
+    return pop_counter1, pop_counter1_err, avg_dtc, avg_dtc_error, cvar

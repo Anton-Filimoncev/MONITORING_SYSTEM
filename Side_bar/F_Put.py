@@ -73,8 +73,6 @@ def f_put():
             create_new_postion(input_new_df, path, risk_rate)
             st.success('Position is OPEN waiting for $$$')
 
-
-
     # show all open position
     for csv_position_df in filenames[:1]:
         tick = get_tick_from_csv_name(csv_position_df)
