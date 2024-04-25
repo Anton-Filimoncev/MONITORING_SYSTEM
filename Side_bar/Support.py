@@ -12,6 +12,8 @@ from .popoption.ShortPut import shortPut
 from .popoption.ShortCall import shortCall
 from .popoption.ShortStrangle import shortStrangle
 from .popoption.PutCalendar import putCalendar
+from .option_strategist import strategist_greeks
+
 
 
 
@@ -171,6 +173,49 @@ def create_new_postion(input_new_df, path, risk_rate):
     # Compute Volatility using the pandas rolling standard deviation function
     hv = log_returns.rolling(window=200).std() * np.sqrt(200)
     hv = hv.iloc[-1]
+
+
+    if pos_type == 'F. Put':
+        current_IV = strategist_greeks.greeks_start(ticker, exp_date)
+        new_position_df['Symbol'] = [ticker]
+        new_position_df['Start_date'] = input_new_df['Start_date_o_p']
+        new_position_df['Exp_date'] = input_new_df['Exp_date_o_p']
+        new_position_df['Strike'] = input_new_df['Strike_o_p']
+        new_position_df['Number_pos'] = input_new_df['Number_pos_o_p'] * -1
+        new_position_df['Start_prime'] = input_new_df['Prime_o_p']
+        new_position_df['Multiplicator'] = input_new_df['Multiplicator_o_p']
+        # new_position_df['Contract'] = get_contract(new_position_df, ticker)
+        new_position_df['Start_price'] = input_new_df['Start_price']
+        new_position_df['Dividend'] = input_new_df['Dividend']
+        new_position_df['Commission'] = input_new_df['Commission_o_p']
+        new_position_df['Margin_start'] = input_new_df['Margin_o_p']
+        new_position_df['DTE'] = (new_position_df['Exp_date'] - new_position_df['Start_date']).values[0].days
+        new_position_df['Open_cost'] = (new_position_df['Number_pos'].iloc[0] * new_position_df['Start_prime'])* new_position_df['Multiplicator']
+        new_position_df['Start_delta'] = input_new_df['Delta_o_p']
+        new_position_df['HV_200'] = hv
+        new_position_df['Price_2s_down'] = start_price - (2 * start_price * hv*(math.sqrt(new_position_df['DTE'].iloc[0]/365)))
+        new_position_df['Max_profit'] = new_position_df['Open_cost'].abs()
+        max_risk =  calculate_option_price('P', new_position_df['Price_2s_down'], new_position_df['Strike'], risk_rate, current_IV, new_position_df['DTE'])
+        new_position_df['Max_Risk'] = np.max([new_position_df['Strike'].iloc[0] * 0.1, (new_position_df['Price_2s_down'].iloc[0] - (new_position_df['Price_2s_down'].iloc[0]-new_position_df['Strike'].iloc[0]))*0.2]) * new_position_df['Open_cost'].abs() * 100
+        new_position_df['BE_lower'] = new_position_df['Strike'] - new_position_df['Start_prime']
+        new_position_df['RR_RATIO'] = new_position_df['Max_profit'] / new_position_df['Max_Risk']
+        new_position_df['MP/DTE'] = new_position_df['Max_profit'] / new_position_df['DTE']
+        new_position_df['Profit_Target'] = new_position_df['Max_profit'] * 0.5 - (new_position_df['Commission'])
+
+        quotes_df = market_data(new_position_df['Contract'].iloc[0], KEY)
+
+        pop_50, expected_profit, avg_dtc = get_proba_50_put(start_price, yahoo_price_df, new_position_df['Strike'].iloc[0],
+                                                            new_position_df['Start_prime'].iloc[0], quotes_df['iv'].iloc[0],
+                                                            new_position_df['DTE'].iloc[0], risk_rate)
+
+        new_position_df['Expected_Return'] = expected_profit
+        new_position_df['DTE_Target'] = int(avg_dtc[0])
+        new_position_df['POP_Monte_start_50'] = pop_50
+        new_position_df['Plan_ROC '] = new_position_df['Profit_Target'] / new_position_df['Margin_start']
+        new_position_df['ROC_DAY_target'] = new_position_df['Plan_ROC '] / new_position_df['DTE_Target']
+        #
+        new_position_df.to_csv(f"{path}{ticker}_{new_position_df['Start_date'].values[0].strftime('%Y-%m-%d')}.csv", index=False)
+
 
     if pos_type == 'Put Sell':
         new_position_df['Symbol'] = [ticker]
