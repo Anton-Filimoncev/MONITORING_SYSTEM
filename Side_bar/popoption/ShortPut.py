@@ -1,5 +1,6 @@
 from numba import jit
 from .MonteCarlo import monteCarlo
+from .MonteCarlo_SELL_PUT_RETURN import monteCarlo_exp_return
 import time
 from .BlackScholes import blackScholesPut
 import numpy as np
@@ -43,11 +44,17 @@ def shortPut(underlying, sigma, rate, trials, days_to_expiration, closing_days_a
     except RuntimeError as err:
         print(err.args)
 
+    expected_profit = monteCarlo_exp_return(underlying, rate, sigma, days_to_expiration,
+                                                              closing_days_array, trials,
+                                                              initial_credit, min_profit, strikes, bsm_debit, yahoo_stock)
+
     response = {
         "pop": pop,
+        'cvar': cvar,
+        'exp_return': expected_profit,
         "pop_error": pop_error,
         "avg_dtc": avg_dtc,
         "avg_dtc_error": avg_dtc_error
     }
 
-    return pop[0]/100, cvar*100
+    return response

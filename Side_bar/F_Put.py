@@ -5,19 +5,24 @@ import glob
 from .Support import *
 import datetime
 
+
 def f_put():
+
     col1, col2, col3 = st.columns([6,1,1])
     with col1:
         st.header('FUTURES Put')
     with col2:
         risk_rate = st.number_input('Risk Rate', step=0.5, format="%.1f", min_value=1., max_value=5000., value=4.8)
-    with col3:
-        refresh_btn = st.button("Refresh ALL")
-    if refresh_btn:
-        st.success('All data is updated!')
 
+    with col3:
+        refresh_btn = st.button("Refresh ALL", type="primary")
+        #     refresh_btn = True
+        # else:
+        #     refresh_btn = False
+    print('refresh_btn222')
+    print(refresh_btn)
     # download all open position
-    path = 'Side_bar/side_bar_data/futures/'
+    path = 'Side_bar/side_bar_data/futures/put/'
     filenames = glob.glob(path + "*.csv")
     # ============================================
     # ============================================     add new position
@@ -29,7 +34,7 @@ def f_put():
             end_date_stat = st.date_input('EXP date')
         with col12:
             ticker = st.text_input('Ticker', '')
-            dividend = st.number_input('Dividend', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.01)
+            dividend = st.number_input('Dividend', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
             try:
                 start_b_a_price_yahoo = yf.download(ticker)['Close'].iloc[-1]
             except:
@@ -45,7 +50,7 @@ def f_put():
             multiplicator_o_p = st.number_input('Multiplicator', min_value=1, max_value=100000, value=100)
             size_o_p = st.number_input('Size', min_value=1, max_value=100000, value=100)
             commission_o_p = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
-            margin_o_p = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=1200.)
+            margin_o_p = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=6000.)
 
 
     # ============================================
@@ -73,14 +78,32 @@ def f_put():
             create_new_postion(input_new_df, path, risk_rate)
             st.success('Position is OPEN waiting for $$$')
 
+
+    progress_text = "Loading..."
+    my_bar = st.progress(0, text=progress_text)
     # show all open position
-    for csv_position_df in filenames[:1]:
+    print(filenames)
+
+    for num, csv_position_df in enumerate(filenames):
+        print('num', num)
+        print('csv_position_df', csv_position_df)
         tick = get_tick_from_csv_name(csv_position_df)
+        print('tick', tick)
         pos_type = 'F. Put'
-        postion_df, pl, marg, pop_log = update_postion(csv_position_df, pos_type, risk_rate)
-        print('aaaaaaaaaaaaaaaa', pl, marg, pop_log)
-        with st.expander(tick + (' .'*5) + 'PL: ' + str(pl) + (' .'*5) + 'Margin: ' + str(marg) + (' .'*5) + 'POP lognormal: ' + str(pop_log)):
+        if refresh_btn:
+            update_postion(csv_position_df, pos_type, risk_rate)
+            # st.success('All data is updated!')
+        # else:
+        #     print('elseeeeeeeeeee')
+        position_df, greeks_df, pl, marg, pop_log = return_postion(csv_position_df, pos_type, risk_rate)
+
+        with st.expander(tick + (' .' * 5) + 'PL: ' + str(pl) + (' .' * 5) + 'Margin: ' + str(marg) + (
+                ' .' * 5) + 'POP lognormal: ' + str(pop_log)):
             st.text(tick)
-            st.dataframe(postion_df, hide_index=True, column_config=None)
+            st.dataframe(position_df, hide_index=True, column_config=None)
+            st.dataframe(greeks_df, hide_index=True, column_config=None)
+
+        my_bar.progress(int((100 / len(filenames)) * (num + 1)), text=progress_text)
+    my_bar.empty()
 
 

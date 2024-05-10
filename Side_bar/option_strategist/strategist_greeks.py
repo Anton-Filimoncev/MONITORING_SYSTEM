@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from concurrent.futures.thread import ThreadPoolExecutor
 import os
+import datetime
 from time import sleep
 from selenium.webdriver.support.ui import WebDriverWait
 import pickle
@@ -13,7 +14,7 @@ import pickle
 
 start_df_name = 'Regime_ALL.xlsx'
 
-def greeks():
+def greeks(cur_date):
     barcode = 'dranatom'
     password = 'MSIGX660'
     # ____________________ Работа с Selenium ____________________________
@@ -48,12 +49,10 @@ def greeks():
     except:
         pass
     #
-
     select_fresh_txt = checker.find_element(By.XPATH,
                                             '''//*[@id="node-38"]/div/div/div/div/table[2]/tbody/tr[1]/td[1]''')
 
     select_fresh_txt.click()
-
 
     html_txt = checker.page_source
     # print("The current url is:" + str(checker.page_source))
@@ -61,29 +60,18 @@ def greeks():
     full_txt = (html_txt[:html_txt.rindex('</pre>')]).replace('* ', '').replace(
         '^ ', '')
 
-    # full_txt = (html_txt[html_txt.index('800-724-1817'):html_txt.rindex('</pre>')]).replace('* ', '').replace(
-    #     '^ ', '')
-
-    # full_txt = full_txt
-
     print(full_txt)
 
+    with open(f"Side_bar/option_strategist/data/{cur_date}.txt", "w") as f:
+        f.write(full_txt)
 
-    # with open('data.txt', 'r') as file:
-    #     full_txt = file.read()
-
-    # col_name_replace = 'Symbol (option symbols)           hv20  hv50 hv100    DATE   curiv Days/Percentile Close'
-    # full_txt = full_txt.replace(col_name_replace, '').replace('\n', ' ')
-
-    # with open('data.txt', 'w') as f:
-    #     f.write(full_txt)
+    checker.close()
 
     return full_txt
 
 
 def hist_vol_analysis(full_txt, ticker, exp_date):
     full_txt = full_txt[full_txt.index(ticker):]
-
     full_txt = full_txt[full_txt.index(exp_date):full_txt.index(exp_date) + 60000]
     # print(full_txt)
 
@@ -126,14 +114,27 @@ def hist_vol_analysis(full_txt, ticker, exp_date):
 
 def greeks_start(ticker, exp_date):
     ticker = ticker.split('=')[0]
-    full_txt = greeks()
-    print(exp_date)
+    cur_date = datetime.datetime.now().strftime('%Y_%m_%d')
+
+    print('exp_date', exp_date)
+    try:
+        exp_date = datetime.datetime.strptime(exp_date, '%Y-%m-%d')
+        exp_date = datetime.datetime.strptime(exp_date, '%m/%d/%Y')
+    except:
+        pass
     reformat_exp_date = exp_date.strftime('%m/%d/%Y')
+    print('reformat_exp_date', reformat_exp_date)
     reformat_exp_date_month = reformat_exp_date.split('/')[0].replace('0', ' ')
     reformat_exp_date_day = reformat_exp_date.split('/')[1].replace('0', ' ')
     reformat_exp_date_year = reformat_exp_date.split('/')[2]
     reformat_exp_date = reformat_exp_date_month+'/'+reformat_exp_date_day+'/'+reformat_exp_date_year
     print(reformat_exp_date)
+    try:
+        with open(f"Side_bar/option_strategist/data/{cur_date}.txt", 'r') as file:
+            full_txt = file.read()
+    except:
+        full_txt = greeks(cur_date)
+
     df, IV = hist_vol_analysis(full_txt, ticker, reformat_exp_date)
     return df, IV
 

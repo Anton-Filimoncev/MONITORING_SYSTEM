@@ -18,7 +18,7 @@ from .option_strategist import strategist_greeks
 
 
 def get_tick_from_csv_name(csv_position_df):
-    ticker_name = csv_position_df.split("/")[-1].split(".")[0]
+    ticker_name = csv_position_df.split("\\")[-1].split("_")[0]
     return ticker_name
 
 def strike_price(strike):
@@ -173,6 +173,7 @@ def create_new_postion(input_new_df, path, risk_rate):
     # Compute Volatility using the pandas rolling standard deviation function
     hv = log_returns.rolling(window=200).std() * np.sqrt(200)
     hv = hv.iloc[-1]
+    current_price = yahoo_price_df['Close'].iloc[-1]
 
 
     if pos_type == 'F. Put':
@@ -203,19 +204,203 @@ def create_new_postion(input_new_df, path, risk_rate):
         new_position_df['Profit_Target'] = new_position_df['Max_profit'] * 0.5 - (new_position_df['Commission'])
 
 
-        proba_50, cvar = shortPut(
+        response = shortPut(
             start_price, current_IV, risk_rate, 2000, new_position_df['DTE'].values[0], [new_position_df['DTE'].values[0]],
             [50], new_position_df['Strike'].values[0], new_position_df['Start_prime'].values[0], yahoo_price_df
                             )
-        proba_50 = proba_50/new_position_df['Multiplicator'].values[0]
-        cvar = cvar*new_position_df['Multiplicator'].values[0]
 
-        new_position_df['Expected_Return'] = expected_profit
-        new_position_df['DTE_Target'] = int(avg_dtc[0])
-        new_position_df['POP_Monte_start_50'] = pop_50
+        print('response', response)
+        response['pop'] = float(response['pop'][0]) / new_position_df['Multiplicator'].values[0]
+        response['cvar'] = float(response['cvar']) * new_position_df['Multiplicator'].values[0]
+        response['exp_return'] = float(response['exp_return']) * new_position_df['Multiplicator'].values[0]
+
+        new_position_df['Expected_Return'] = response['exp_return']
+        new_position_df['DTE_Target'] = int(response['avg_dtc'][0])
+        new_position_df['POP_Monte_start_50'] = response['pop']
         new_position_df['Plan_ROC '] = new_position_df['Profit_Target'] / new_position_df['Margin_start']
         new_position_df['ROC_DAY_target'] = new_position_df['Plan_ROC '] / new_position_df['DTE_Target']
         #
+        current_prime = df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['PUT'].reset_index(drop=True).iloc[
+            0]
+        print('current_prime', current_prime)
+        current_delta = \
+        df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['PUTDEL'].reset_index(drop=True).iloc[0]
+        current_vega = abs(
+            df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['VEGA'].reset_index(drop=True).iloc[0])
+        current_theta = abs(
+            df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['THETA'].reset_index(drop=True).iloc[0])
+        current_gamma = abs(
+            df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['GAMMA'].reset_index(drop=True).iloc[0])
+
+        new_position_df['Delta'] = current_delta
+        new_position_df['Vega'] = current_vega
+        new_position_df['Theta'] = current_theta
+        new_position_df['Gamma'] = current_gamma
+
+        response = shortPut(
+            current_price, current_IV, risk_rate, 2000, new_position_df['DAYS_remaining'].iloc[0],
+            [new_position_df['DAYS_remaining'].iloc[0]],
+            [50], new_position_df['Strike'].values[0], new_position_df['Start_prime'].values[0], yahoo_price_df
+        )
+
+        response['pop'] = float(response['pop'][0]) / new_position_df['Multiplicator'].values[0]
+        response['cvar'] = float(response['cvar']) * new_position_df['Multiplicator'].values[0]
+        response['exp_return'] = float(response['exp_return']) * new_position_df['Multiplicator'].values[0]
+
+        print('pop_50 ', response['pop'], 'expected_profit ', response['exp_return'], 'cvar ', response['cvar'], )
+
+        new_position_df['POP_50'] = response['pop'] * 100
+        new_position_df['Current_expected_return'] = response['exp_return']
+        new_position_df['CVAR'] = response['cvar']
+
+        new_position_df['DAYS_remaining'] = (new_position_df['Exp_date'].iloc[0] - datetime.datetime.now().date()).days
+        new_position_df['DAYS_elapsed_TDE'] = new_position_df['DTE'] - new_position_df['DAYS_remaining']
+        new_position_df['%_days_elapsed'] = new_position_df['DAYS_elapsed_TDE'] / new_position_df['DTE']
+
+        new_position_df['Prime_now'] = current_prime
+        new_position_df['Cost_to_close_Market_cost'] = ((new_position_df['Number_pos'] * current_prime) * \
+                                                  new_position_df['Multiplicator'].values[0]) - new_position_df['Commission']
+        new_position_df['Current_Margin'] = new_position_df['Margin_start'].values[0]
+        new_position_df['Current_PL'] = new_position_df['Cost_to_close_Market_cost'] - new_position_df['Open_cost']
+        new_position_df['Current_ROI'] = new_position_df['Current_PL'] / new_position_df['Current_Margin']
+        new_position_df['Current_RR_ratio'] = (new_position_df['Max_profit'] - new_position_df['Current_PL']) / (
+                    new_position_df['CVAR'] + new_position_df['Current_PL'])
+        new_position_df['PL_TDE'] = new_position_df['Current_PL'] / new_position_df['DAYS_elapsed_TDE']
+        new_position_df['Leverage'] = (current_delta * 100 * current_price) / new_position_df['Current_Margin']
+        new_position_df['Margin_2S_Down'] = np.max([0.1 * new_position_df['Strike'], new_position_df['Price_2s_down'] * 0.2 - (
+                    new_position_df['Price_2s_down'] - new_position_df['Strike'])]) * new_position_df['Number_pos'].abs() * 100
+
+
+        P_below = stats.norm.cdf(
+            (np.log(new_position_df['BE_lower'].iloc[0] / current_price) / (
+                    new_position_df['HV_200'].iloc[0] * math.sqrt(new_position_df['DAYS_remaining'].iloc[0] / 365))))
+
+        new_position_df['Current_POP_lognormal'] = 1 - P_below
+
+        new_position_df['MC_2S_Down'] = calculate_option_price('P', new_position_df['Price_2s_down'].iloc[0],
+                                                          new_position_df['Strike'].iloc[0], risk_rate,
+                                                          new_position_df['HV_200'].iloc[0],
+                                                          new_position_df['DAYS_remaining']) * new_position_df[
+                                       'Number_pos'].abs() * 100
+
+        new_position_df[['%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio', ]] = new_position_df[[
+            '%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio']] * 100
+        postion_df = new_position_df.round(2)
+
+        new_position_df.to_csv(f"{path}{ticker}_{new_position_df['Start_date'].values[0].strftime('%Y-%m-%d')}.csv", index=False)
+
+
+    if pos_type == 'F. Call':
+        new_position_df['Symbol'] = [ticker]
+        new_position_df['Start_date'] = input_new_df['Start_date_o_p']
+        new_position_df['Exp_date'] = input_new_df['Exp_date_o_p']
+        df_greek, current_IV = strategist_greeks.greeks_start(ticker,  new_position_df['Exp_date'].values[0])
+        new_position_df['Strike'] = input_new_df['Strike_o_p']
+        new_position_df['Number_pos'] = input_new_df['Number_pos_o_p'] * -1
+        new_position_df['Start_prime'] = input_new_df['Prime_o_p']
+        new_position_df['Multiplicator'] = input_new_df['Multiplicator_o_p']
+        # new_position_df['Contract'] = get_contract(new_position_df, ticker)
+        new_position_df['Start_price'] = input_new_df['Start_price']
+        new_position_df['Dividend'] = input_new_df['Dividend']
+        new_position_df['Commission'] = input_new_df['Commission_o_p']
+        new_position_df['Margin_start'] = input_new_df['Margin_o_p']
+        new_position_df['DTE'] = (new_position_df['Exp_date'] - new_position_df['Start_date']).values[0].days
+        new_position_df['Open_cost'] = (new_position_df['Number_pos'].iloc[0] * new_position_df['Start_prime'].values[0])* new_position_df['Multiplicator'].values[0]
+        new_position_df['Start_delta'] = input_new_df['Delta_o_p']
+        new_position_df['HV_200'] = hv
+        new_position_df['Price_2s_down'] = start_price - (2 * start_price * hv*(math.sqrt(new_position_df['DTE'].iloc[0]/365)))
+        new_position_df['Max_profit'] = new_position_df['Open_cost'].abs()
+        max_risk = calculate_option_price('P', new_position_df['Price_2s_down'].values[0], new_position_df['Strike'].values[0], risk_rate, current_IV, new_position_df['DTE'].values[0])
+        new_position_df['Max_Risk'] = np.max([new_position_df['Strike'].iloc[0] * 0.1, (new_position_df['Price_2s_down'].iloc[0] - (new_position_df['Price_2s_down'].iloc[0]-new_position_df['Strike'].iloc[0]))*0.2]) * new_position_df['Open_cost'].abs() * 100
+        new_position_df['BE_lower'] = new_position_df['Strike'] - new_position_df['Start_prime']
+        new_position_df['RR_RATIO'] = new_position_df['Max_profit'] / new_position_df['Max_Risk']
+        new_position_df['MP/DTE'] = new_position_df['Max_profit'] / new_position_df['DTE']
+        new_position_df['Profit_Target'] = new_position_df['Max_profit'] * 0.5 - (new_position_df['Commission'])
+
+
+        response = shortPut(
+            start_price, current_IV, risk_rate, 2000, new_position_df['DTE'].values[0], [new_position_df['DTE'].values[0]],
+            [50], new_position_df['Strike'].values[0], new_position_df['Start_prime'].values[0], yahoo_price_df
+                            )
+
+        print('response', response)
+        response['pop'] = float(response['pop'][0]) / new_position_df['Multiplicator'].values[0]
+        response['cvar'] = float(response['cvar']) * new_position_df['Multiplicator'].values[0]
+        response['exp_return'] = float(response['exp_return']) * new_position_df['Multiplicator'].values[0]
+
+        new_position_df['Expected_Return'] = response['exp_return']
+        new_position_df['DTE_Target'] = int(response['avg_dtc'][0])
+        new_position_df['POP_Monte_start_50'] = response['pop']
+        new_position_df['Plan_ROC '] = new_position_df['Profit_Target'] / new_position_df['Margin_start']
+        new_position_df['ROC_DAY_target'] = new_position_df['Plan_ROC '] / new_position_df['DTE_Target']
+        #
+        current_prime = df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['PUT'].reset_index(drop=True).iloc[
+            0]
+        print('current_prime', current_prime)
+        current_delta = \
+        df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['PUTDEL'].reset_index(drop=True).iloc[0]
+        current_vega = abs(
+            df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['VEGA'].reset_index(drop=True).iloc[0])
+        current_theta = abs(
+            df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['THETA'].reset_index(drop=True).iloc[0])
+        current_gamma = abs(
+            df_greek[df_greek['STRIKE'] == new_position_df['Strike'].iloc[0]]['GAMMA'].reset_index(drop=True).iloc[0])
+
+        new_position_df['Delta'] = current_delta
+        new_position_df['Vega'] = current_vega
+        new_position_df['Theta'] = current_theta
+        new_position_df['Gamma'] = current_gamma
+
+        new_position_df['POP_50'] = response['pop'] * 100
+        new_position_df['Current_expected_return'] = response['exp_return']
+        new_position_df['CVAR'] = response['cvar']
+
+        response = shortPut(
+            current_price, current_IV, risk_rate, 2000, new_position_df['DAYS_remaining'].iloc[0],
+            [new_position_df['DAYS_remaining'].iloc[0]],
+            [50], new_position_df['Strike'].values[0], new_position_df['Start_prime'].values[0], yahoo_price_df
+        )
+
+        response['pop'] = float(response['pop'][0]) / new_position_df['Multiplicator'].values[0]
+        response['cvar'] = float(response['cvar']) * new_position_df['Multiplicator'].values[0]
+        response['exp_return'] = float(response['exp_return']) * new_position_df['Multiplicator'].values[0]
+
+        print('pop_50 ', response['pop'], 'expected_profit ', response['exp_return'], 'cvar ', response['cvar'], )
+
+        new_position_df['DAYS_remaining'] = (new_position_df['Exp_date'].iloc[0] - datetime.datetime.now().date()).days
+        new_position_df['DAYS_elapsed_TDE'] = new_position_df['DTE'] - new_position_df['DAYS_remaining']
+        new_position_df['%_days_elapsed'] = new_position_df['DAYS_elapsed_TDE'] / new_position_df['DTE']
+
+        new_position_df['Prime_now'] = current_prime
+        new_position_df['Cost_to_close_Market_cost'] = ((new_position_df['Number_pos'] * current_prime) * \
+                                                  new_position_df['Multiplicator'].values[0]) - new_position_df['Commission']
+        new_position_df['Current_Margin'] = new_position_df['Margin_start'].values[0]
+        new_position_df['Current_PL'] = new_position_df['Cost_to_close_Market_cost'] - new_position_df['Open_cost']
+        new_position_df['Current_ROI'] = new_position_df['Current_PL'] / new_position_df['Current_Margin']
+        new_position_df['Current_RR_ratio'] = (new_position_df['Max_profit'] - new_position_df['Current_PL']) / (
+                    new_position_df['CVAR'] + new_position_df['Current_PL'])
+        new_position_df['PL_TDE'] = new_position_df['Current_PL'] / new_position_df['DAYS_elapsed_TDE']
+        new_position_df['Leverage'] = (current_delta * 100 * current_price) / new_position_df['Current_Margin']
+        new_position_df['Margin_2S_Down'] = np.max([0.1 * new_position_df['Strike'], new_position_df['Price_2s_down'] * 0.2 - (
+                    new_position_df['Price_2s_down'] - new_position_df['Strike'])]) * new_position_df['Number_pos'].abs() * 100
+
+
+        P_below = stats.norm.cdf(
+            (np.log(new_position_df['BE_lower'].iloc[0] / current_price) / (
+                    new_position_df['HV_200'].iloc[0] * math.sqrt(new_position_df['DAYS_remaining'].iloc[0] / 365))))
+
+        new_position_df['Current_POP_lognormal'] = 1 - P_below
+
+        new_position_df['MC_2S_Down'] = calculate_option_price('P', new_position_df['Price_2s_down'].iloc[0],
+                                                          new_position_df['Strike'].iloc[0], risk_rate,
+                                                          new_position_df['HV_200'].iloc[0],
+                                                          new_position_df['DAYS_remaining']) * new_position_df[
+                                       'Number_pos'].abs() * 100
+
+        new_position_df[['%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio', ]] = new_position_df[[
+            '%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio']] * 100
+        postion_df = new_position_df.round(2)
+
         new_position_df.to_csv(f"{path}{ticker}_{new_position_df['Start_date'].values[0].strftime('%Y-%m-%d')}.csv", index=False)
 
 
@@ -314,13 +499,110 @@ def market_data(contract, KEY):
     return chains_df
 
 def update_postion(csv_position_df, pos_type, risk_rate):
+    print('update_postion')
     postion_df = pd.read_csv(csv_position_df)
-    KEY = credential.password['marketdata_KEY']
+    print('csv_position_df', csv_position_df)
+    print('postion_df1')
+    print(postion_df)
     ticker = postion_df['Symbol'].iloc[0]
+    print('tickerrrrrr', ticker)
     yahoo_price_df = yf.download(ticker)
     print('yahoo_price_df')
     print(yahoo_price_df)
+    print(postion_df['Exp_date'])
     current_price = yahoo_price_df['Close'].iloc[-1]
+    if pos_type == 'F. Put':
+        df_greek, current_IV = strategist_greeks.greeks_start(ticker, postion_df['Exp_date'].values[0])
+        postion_df['DAYS_remaining'] = (datetime.datetime.strptime(postion_df['Exp_date'].iloc[0], '%Y-%m-%d') - datetime.datetime.now()).days
+        postion_df['DAYS_elapsed_TDE'] = postion_df['DTE'] - postion_df['DAYS_remaining']
+        postion_df['%_days_elapsed'] = postion_df['DAYS_elapsed_TDE'] / postion_df['DTE']
+        print(df_greek['STRIKE'])
+        print(postion_df['Strike'].iloc[0])
+        current_prime = df_greek[df_greek['STRIKE'] == postion_df['Strike'].iloc[0]]['PUT'].reset_index(drop=True).iloc[0]
+        print('current_prime', current_prime)
+        current_delta = df_greek[df_greek['STRIKE'] == postion_df['Strike'].iloc[0]]['PUTDEL'].reset_index(drop=True).iloc[0]
+        current_vega = abs(df_greek[df_greek['STRIKE'] == postion_df['Strike'].iloc[0]]['VEGA'].reset_index(drop=True).iloc[0])
+        current_theta = abs(
+            df_greek[df_greek['STRIKE'] == postion_df['Strike'].iloc[0]]['THETA'].reset_index(drop=True).iloc[0])
+        current_gamma = abs(
+            df_greek[df_greek['STRIKE'] == postion_df['Strike'].iloc[0]]['GAMMA'].reset_index(drop=True).iloc[0])
+
+        postion_df['Delta'] = current_delta * -100
+        postion_df['Vega'] = current_vega * -100
+        postion_df['Theta'] = -current_theta * -100
+        postion_df['Gamma'] = current_gamma * -100
+
+
+        response = shortPut(
+            current_price, current_IV, risk_rate, 2000, postion_df['DAYS_remaining'].iloc[0], [postion_df['DAYS_remaining'].iloc[0]],
+            [50], postion_df['Strike'].values[0], postion_df['Start_prime'].values[0], yahoo_price_df
+                            )
+
+        response['pop'] = float(response['pop'][0]) / postion_df['Multiplicator'].values[0]
+        response['cvar'] = float(response['cvar']) * postion_df['Multiplicator'].values[0]
+        response['exp_return'] = float(response['exp_return']) * postion_df['Multiplicator'].values[0]
+
+
+        print('pop_50 ', response['pop'], 'expected_profit ', response['exp_return'], 'cvar ', response['cvar'],)
+        postion_df['POP_50'] = response['pop']
+        postion_df['Current_expected_return'] = response['exp_return']
+        postion_df['CVAR'] = response['cvar']
+
+        postion_df['Prime_now'] = current_prime
+        postion_df['Cost_to_close_Market_cost'] = (postion_df['Number_pos'] * current_prime) * postion_df['Multiplicator'].values[0]
+        postion_df['Current_Margin'] = postion_df['Margin_start'].values[0]
+        postion_df['Current_PL'] = postion_df['Cost_to_close_Market_cost'] - postion_df['Open_cost']
+        postion_df['Current_ROI'] = postion_df['Current_PL'] / postion_df['Current_Margin']
+        postion_df['Current_RR_ratio'] = (postion_df['Max_profit'] - postion_df['Current_PL']) / (postion_df['CVAR'] + postion_df['Current_PL'])
+        postion_df['PL_TDE'] = postion_df['Current_PL'] / postion_df['DAYS_elapsed_TDE']
+        postion_df['Leverage'] = (current_delta * 100 * current_price) / postion_df['Current_Margin']
+        postion_df['Margin_2S_Down'] = np.max([0.1 * postion_df['Strike'], postion_df['Price_2s_down'] * 0.2 - (postion_df['Price_2s_down'] - postion_df['Strike'])]) * postion_df['Number_pos'].abs() * 100
+
+        print('shortPut')
+        print('current_price', current_price)
+        print('current_IV', current_IV)
+        print('risk_rate', risk_rate)
+        print('DAYS_remaining', postion_df['DAYS_remaining'].iloc[0])
+        print('DTE', postion_df['DTE'].values[0])
+        print('Strike', postion_df['Strike'].values[0])
+        print('Start_prime', postion_df['Start_prime'].values[0])
+
+
+        P_below = stats.norm.cdf(
+            (np.log(postion_df['BE_lower'].iloc[0] / current_price) / (
+                    postion_df['HV_200'].iloc[0] * math.sqrt(postion_df['DAYS_remaining'].iloc[0] / 365))))
+
+        postion_df['Current_POP_lognormal'] = 1 - P_below
+
+        postion_df['MC_2S_Down'] = calculate_option_price('P', postion_df['Price_2s_down'].iloc[0],
+                                  postion_df['Strike'].iloc[0], risk_rate, postion_df['HV_200'].iloc[0],
+                                  postion_df['DAYS_remaining']) * postion_df['Number_pos'].abs() * 100
+
+        postion_df[['%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio',]] = postion_df[['%_days_elapsed', 'Current_POP_lognormal', 'Current_ROI', 'Current_RR_ratio']] * 100
+        postion_df = postion_df.round(2)
+
+        postion_df.to_csv(csv_position_df, index=False )
+
+        current_position = postion_df[['DAYS_remaining', 'DAYS_elapsed_TDE', '%_days_elapsed',
+                           'Cost_to_close_Market_cost', 'Current_Margin', 'Current_PL', 'Current_expected_return',
+                           'Current_POP_lognormal', 'POP_50', 'Current_ROI', 'Current_RR_ratio', 'PL_TDE', 'Leverage',
+                           'MC_2S_Down', 'Margin_2S_Down', 'Max_profit']].T
+
+        current_position['Values'] = current_position[0]
+        current_position['Name'] = current_position.index.values.tolist()
+        current_position = current_position[['Name', 'Values']]
+        current_position1 = current_position[int(len(current_position) / 2):].reset_index(drop=True)
+        current_position2 = current_position[:int(len(current_position) / 2)].reset_index(drop=True)
+
+        wight_df = pd.concat([current_position1, current_position2], axis=1, )
+
+        wight_df.columns = ['N1', 'V1', 'N2', 'V2']
+        pl, marg, pop_log = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0],  postion_df['Current_POP_lognormal'].iloc[0]
+
+        return wight_df, pl, marg, pop_log
+
+
+
     if pos_type == 'Put Sell':
         quotes_df = market_data(postion_df['Contract'].iloc[0], KEY)
         print(quotes_df)
@@ -449,3 +731,42 @@ def update_postion(csv_position_df, pos_type, risk_rate):
         pl, marg, pop_log = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0],  postion_df['Current_POP_lognormal'].iloc[0]
 
         return wight_df, pl, marg, pop_log
+
+
+def return_postion(csv_position_df, pos_type, risk_rate):
+    postion_df = pd.read_csv(csv_position_df)
+    print('postion_df')
+    print(postion_df)
+    print(postion_df.columns.tolist())
+    KEY = credential.password['marketdata_KEY']
+    ticker = postion_df['Symbol'].iloc[0]
+    yahoo_price_df = yf.download(ticker)
+    current_price = yahoo_price_df['Close'].iloc[-1]
+    if pos_type == 'F. Put':
+        current_position = postion_df[['DAYS_remaining', 'DAYS_elapsed_TDE', '%_days_elapsed',
+                       'Cost_to_close_Market_cost', 'Current_Margin', 'Current_PL', 'Current_expected_return', 'CVAR',
+                       'Current_POP_lognormal', 'POP_50', 'Current_ROI', 'Current_RR_ratio', 'PL_TDE', 'Max_profit']].T
+        # current_position = [['Symbol', 'Start_date', 'Exp_date', 'Strike', 'Number_pos', 'Start_prime', 'Multiplicator', 'Start_price', 'Dividend', 'Commission', 'Margin_start', 'DTE', 'Open_cost', 'Start_delta', 'HV_200', 'Price_2s_down', 'Max_profit', 'Max_Risk', 'BE_lower', 'RR_RATIO', 'MP/DTE', 'Profit_Target', 'Expected_Return', 'DTE_Target', 'POP_Monte_start_50', 'Plan_ROC ', 'ROC_DAY_target']]
+        current_position['Values'] = current_position[0]
+        current_position['Name'] = current_position.index.values.tolist()
+        current_position = current_position[['Name', 'Values']]
+        current_position1 = current_position[int(len(current_position) / 2):].reset_index(drop=True)
+        current_position2 = current_position[:int(len(current_position) / 2)].reset_index(drop=True)
+
+        wight_df = pd.concat([current_position1, current_position2], axis=1, )
+        wight_df.columns = ['N1', 'V1', 'N2', 'V2']
+
+        greeks_position = postion_df[['Delta', 'Vega', 'Theta', 'Gamma']].T
+
+        greeks_position['Values'] = greeks_position[0]
+        greeks_position['Name'] = greeks_position.index.values.tolist()
+        greeks_position = greeks_position[['Name', 'Values']]
+        greeks_position1 = greeks_position[int(len(greeks_position) / 2):].reset_index(drop=True)
+        greeks_position2 = greeks_position[:int(len(greeks_position) / 2)].reset_index(drop=True)
+
+        greeks_df = pd.concat([greeks_position1, greeks_position2], axis=1, )
+        greeks_df.columns = ['N1', 'V1', 'N2', 'V2']
+
+        pl, marg, pop_log = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0],  postion_df['Current_POP_lognormal'].iloc[0]
+
+        return wight_df, greeks_df, pl, marg, pop_log

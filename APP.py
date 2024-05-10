@@ -13,26 +13,32 @@ hide_st_style = """
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-f_put()
+
+infoType = 'PORTFOLIO'
+
+infoType = st.sidebar.checkbox("PORTFOLIO")
 
 
-# #
-# # if st.sidebar.button("PORTFOLIO", type="primary", key=0):
-# #     infoType = "PORTFOLIO"
-# #     infoType = None
-# #     infoType = None
-# #
-# #
-# # with st.sidebar.expander('FUTURES'):
-# #     if st.button("F. Put", type="primary", key=1):
-# #         infoType = 'F. Put'
-# #
-# #     # infoType_f = st.radio(
-# #     #     "Choose an info type",
-# #     #     ('F. Put', 'F. Call Sell', 'F. Strangle', 'F. OTM Calendar', 'F. ITM Calendar', 'F. git test'), index=None # 'Call Monitoring',
-# #     #     , key=2
-# #     # )
-# #
+with st.sidebar.expander('FUTURES'):
+    infoType_F_P = st.checkbox("F. Put")
+    infoType_F_C = st.checkbox("F. Call")
+    # infoType = st.radio(
+    #     "Choose an info type",
+    #     ('F. Put', 'F. Call'), index=None
+    #     # 'Call Monitoring',
+    # )
+
+with st.sidebar.expander('OPTIONS'):
+    if st.button("Put Sell", type="primary", key=3):
+        infoType = 'Put Sell'
+    if st.button("Call Sell", type="primary", key=4):
+        infoType = 'Call Sell'
+
+    # infoType = st.radio(
+    #     "Choose an info type",
+    #     ('Put Sell', 'Call Sell', 'Strangle', 'OTM Calendar', 'ITM Calendar', 'git test'), index=None # 'Call Monitoring',
+    # )
+#
 # # with st.sidebar.expander('OPTIONS'):
 # #     infoType_o = st.radio(
 # #         "Choose an info type",
@@ -42,26 +48,27 @@ f_put()
 #
 # # ************************************* PORTFOLIO ***************************************
 # # =====================================   Portfolio
-#
-#
+if infoType:
+    st.text('MAIN')
+
 # # ************************************* FUTURES ***************************************
-# # =====================================   Put
-# if infoType == 'F. Put':
-#     f_put()
+# =====================================   Put
+if infoType_F_P:
+    f_put()
+
+
+if infoType_F_C:
+    f_call()
+
+# # ************************************* OPTIONS ***************************************
 #
-# # ************************************* FUTURES ***************************************
-#
-# # =====================================   Portfolio
-# if infoType_o == 'PORTFOLIO':
-#     portfolio()
-#
-# # =====================================   Put Sell
-# if infoType_o == 'Put Sell':
-#     put_sell()
-#
-# # =====================================   Put Sell
-# if infoType_o == 'Call Sell':
-#     call_sell()
+# =====================================   Put Sell
+if infoType == 'Put Sell':
+    put_sell()
+
+# =====================================   Call Sell
+if infoType == 'Call Sell':
+    call_sell()
 #
 # # =====================================   Put Sell
 # if infoType_o == 'Strangle':
