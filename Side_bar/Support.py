@@ -318,7 +318,7 @@ def create_new_postion(input_new_df, path, risk_rate):
         new_position_df['Profit_Target'] = new_position_df['Max_profit'] * 0.5 - (new_position_df['Commission'])
 
 
-        response = shortPut(
+        response = shortCall(
             start_price, current_IV, risk_rate, 2000, new_position_df['DTE'].values[0], [new_position_df['DTE'].values[0]],
             [50], new_position_df['Strike'].values[0], new_position_df['Start_prime'].values[0], yahoo_price_df
                             )

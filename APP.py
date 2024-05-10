@@ -22,6 +22,7 @@ infoType = st.sidebar.checkbox("PORTFOLIO")
 with st.sidebar.expander('FUTURES'):
     infoType_F_P = st.checkbox("F. Put")
     infoType_F_C = st.checkbox("F. Call")
+    infoType_F_ST = st.checkbox("F. Strangle")
     # infoType = st.radio(
     #     "Choose an info type",
     #     ('F. Put', 'F. Call'), index=None
@@ -29,10 +30,8 @@ with st.sidebar.expander('FUTURES'):
     # )
 
 with st.sidebar.expander('OPTIONS'):
-    if st.button("Put Sell", type="primary", key=3):
-        infoType = 'Put Sell'
-    if st.button("Call Sell", type="primary", key=4):
-        infoType = 'Call Sell'
+    infoType_O_P_S = st.checkbox("Put Sell")
+    infoType_O_C_S = st.checkbox("Call Sell")
 
     # infoType = st.radio(
     #     "Choose an info type",
@@ -60,14 +59,17 @@ if infoType_F_P:
 if infoType_F_C:
     f_call()
 
+if infoType_F_ST:
+    f_strangle()
+
 # # ************************************* OPTIONS ***************************************
 #
 # =====================================   Put Sell
-if infoType == 'Put Sell':
+if infoType_O_P_S:
     put_sell()
 
 # =====================================   Call Sell
-if infoType == 'Call Sell':
+if infoType_O_C_S:
     call_sell()
 #
 # # =====================================   Put Sell
