@@ -1331,10 +1331,9 @@ def update_postion_dia(csv_position_df, pos_type, risk_rate, path_bento, input_u
     wight_df = pd.concat([current_position1, current_position2], axis=1, )
 
     wight_df.columns = ['N1', 'V1', 'N2', 'V2']
-    pl, marg, pop_log = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0], \
-        postion_df['Current_POP_lognormal'].iloc[0]
+    pl, marg = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0]
 
-    return wight_df, pl, marg, pop_log
+    return wight_df, pl, marg
 
 def update_postion_cover(csv_position_df, pos_type, risk_rate, path_bento, input_update_df):
     postion_df = pd.read_csv(csv_position_df)
