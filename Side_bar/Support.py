@@ -625,22 +625,18 @@ def create_new_postion(input_new_df, path, path_bento, risk_rate):
                                                                                              0] / 365, 0.04, 0.04,
                                                                                          input_new_df['IV'].iloc[
                                                                                              0] / 100)
-        value_long, delta_long, gamma_long, theta_long, vega_long, rho_long = _gbs(local_side, input_new_df[
-            'Underlying_stock'].iloc[0], input_new_df['Strike'].iloc[0], input_new_df['DTE'].iloc[
-                                                                                       0] / 365, 0.04, 0.04,
-                                                                                   input_new_df['IV'].iloc[
-                                                                                       0] / 100)
+        # value_long, delta_long, gamma_long, theta_long, vega_long, rho_long = _gbs(local_side, input_new_df[
+        #     'Underlying_stock'].iloc[0], input_new_df['Strike'].iloc[0], input_new_df['DTE'].iloc[
+        #                                                                                0] / 365, 0.04, 0.04,
+        #                                                                            input_new_df['IV'].iloc[
+        #                                                                                0] / 100)
 
         input_new_df['delta'] = ((delta_opt * input_new_df['Number_pos'].iloc[0]) + (
-                delta_long * input_new_df['Number_pos'].iloc[0])) / 2
-        input_new_df['gamma'] = ((gamma_opt * input_new_df['Number_pos'].iloc[0]) + (
-                gamma_long * input_new_df['Number_pos'].iloc[0])) / 2
-        input_new_df['theta'] = ((theta_opt * input_new_df['Number_pos'].iloc[0]) + (
-                theta_long * input_new_df['Number_pos'].iloc[0])) / 2
-        input_new_df['vega'] = ((vega_opt * input_new_df['Number_pos'].iloc[0]) + (
-                vega_long * input_new_df['Number_pos'].iloc[0])) / 2
-        input_new_df['rho'] = ((rho_opt * input_new_df['Number_pos'].iloc[0]) + (
-                rho_long * input_new_df['Number_pos'].iloc[0])) / 2
+                1 * input_new_df['Number_pos'].iloc[0])) / 2
+        input_new_df['gamma'] = (gamma_opt * input_new_df['Number_pos'].iloc[0])
+        input_new_df['theta'] = (theta_opt * input_new_df['Number_pos'].iloc[0])
+        input_new_df['vega'] = (vega_opt * input_new_df['Number_pos'].iloc[0])
+        input_new_df['rho'] = (rho_opt * input_new_df['Number_pos'].iloc[0])
 
         input_new_df[['theta', 'vega']] = input_new_df[['theta', 'vega']] * input_new_df['Multiplicator'].iloc[0]
         #
@@ -1369,22 +1365,18 @@ def update_postion_cover(csv_position_df, pos_type, risk_rate, path_bento, input
                                                                              0] / 365, 0.04, 0.04,
                                                                          postion_df['IV_Current'].iloc[
                                                                              0] / 100)
-    value, delta, gamma, theta, vega, rho = _gbs(local_side, postion_df[
-        'Underlying_stock_Current'].iloc[0], postion_df['Strike'].iloc[0], postion_df['DTE'].iloc[
-                                                                                   0] / 365, 0.04, 0.04,
-                                                                               postion_df['IV_Current'].iloc[
-                                                                                   0] / 100)
+    # value, delta, gamma, theta, vega, rho = _gbs(local_side, postion_df[
+    #     'Underlying_stock_Current'].iloc[0], postion_df['Strike'].iloc[0], postion_df['DTE'].iloc[
+    #                                                                                0] / 365, 0.04, 0.04,
+    #                                                                            postion_df['IV_Current'].iloc[
+    #                                                                                0] / 100)
 
     postion_df['delta'] = ((delta_opt * postion_df['Number_pos'].iloc[0]) + (
-            delta )) / 2
-    postion_df['gamma'] = ((gamma_opt * postion_df['Number_pos'].iloc[0]) + (
-            gamma)) / 2
-    postion_df['theta'] = ((theta_opt * postion_df['Number_pos'].iloc[0]) + (
-            theta )) / 2
-    postion_df['vega'] = ((vega_opt * postion_df['Number_pos'].iloc[0]) + (
-            vega)) / 2
-    postion_df['rho'] = ((rho_opt * postion_df['Number_pos'].iloc[0]) + (
-            rho )) / 2
+            1 )) / 2
+    postion_df['gamma'] = (gamma_opt * postion_df['Number_pos'].iloc[0])
+    postion_df['theta'] = (theta_opt * postion_df['Number_pos'].iloc[0])
+    postion_df['vega'] = (vega_opt * postion_df['Number_pos'].iloc[0])
+    postion_df['rho'] = (rho_opt * postion_df['Number_pos'].iloc[0])
     #
 
     postion_df[['theta', 'vega']] = postion_df[['theta', 'vega']] * postion_df['Multiplicator'].iloc[0]

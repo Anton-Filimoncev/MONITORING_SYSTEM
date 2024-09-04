@@ -71,7 +71,7 @@ if infoType_F_ST:
 if infoType_F_DIA:
     f_dia()
 
-# =====================================   Diagonal
+# =====================================   Covered
 if infoType_F_COVER:
     f_cover()
 
