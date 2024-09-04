@@ -1,8 +1,8 @@
 from numba import jit
-import time
 from .MonteCarlo import monteCarlo
 import time
-from .BlackScholes import blackScholesPut, blackScholesCall
+from .BlackScholes import blackScholesCall, blackScholesPut
+from .MonteCarlo_RETURN import monteCarlo_exp_return
 import numpy as np
 
 
@@ -50,11 +50,18 @@ def shortStrangle(underlying, sigma, rate, trials, days_to_expiration,
     except RuntimeError as err:
         print(err.args)
 
+    expected_profit = monteCarlo_exp_return(underlying, rate, sigma, days_to_expiration,
+                                                closing_days_array, trials,
+                                                initial_credit, min_profit, strikes, bsm_debit, yahoo_stock)
+
+
     response = {
         "pop": pop,
+        'cvar': cvar,
+        'exp_return': expected_profit,
         "pop_error": pop_error,
         "avg_dtc": avg_dtc,
         "avg_dtc_error": avg_dtc_error
     }
 
-    return pop[0]/100, cvar*100
+    return response

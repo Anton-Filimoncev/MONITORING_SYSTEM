@@ -8,3 +8,6 @@ from Side_bar.ITM_Calendar import *
 from Side_bar.F_Put import *
 from Side_bar.F_Call import *
 from Side_bar.F_Strangle import *
+from Side_bar.F_Diagonal import *
+from Side_bar.F_Cover import *
+

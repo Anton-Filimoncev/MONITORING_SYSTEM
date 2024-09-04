@@ -14,7 +14,7 @@ import math
 
 
 def monteCarlo_exp_return(underlying, rate, sigma, days_to_expiration, closing_days_array, trials, initial_credit,
-                   min_profit, strikes, bsm_func, yahoo_stock):
+                   min_profit, strikes, bsm_func, yahoo_stock, instr_type):
 
     log_returns = np.log(1 + yahoo_stock['Close'].pct_change())
     # Define the variables
@@ -76,7 +76,7 @@ def monteCarlo_exp_return(underlying, rate, sigma, days_to_expiration, closing_d
             if stock_price <= 0:
                 stock_price = 0.001
 
-            debit = bsm_func(stock_price, strikes, rate, dt * (days_to_expiration - r), sigma)
+            debit = bsm_func(stock_price, strikes, rate, dt * (days_to_expiration - r), sigma, instr_type)
 
             profit = initial_credit - debit  # Profit if we were to close on current day
 

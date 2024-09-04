@@ -23,6 +23,7 @@ def f_put():
     print(refresh_btn)
     # download all open position
     path = 'Side_bar/side_bar_data/futures/put/'
+    path_bento = 'Side_bar/databentos/req/'
     filenames = glob.glob(path + "*.csv")
     # ============================================
     # ============================================     add new position
@@ -34,6 +35,7 @@ def f_put():
             end_date_stat = st.date_input('EXP date')
         with col12:
             ticker = st.text_input('Ticker', '')
+            ticker_b = st.text_input('Ticker Bento', '')
             dividend = st.number_input('Dividend', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
             try:
                 start_b_a_price_yahoo = yf.download(ticker)['Close'].iloc[-1]
@@ -52,13 +54,13 @@ def f_put():
             commission_o_p = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
             margin_o_p = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=6000.)
 
-
     # ============================================
 
         if st.button("Open", type="primary"):
             input_new_df = pd.DataFrame({
                 'Position_type': ['F. Put'],
                 'Symbol': [ticker],
+                'Symbol Bento': [ticker_b],
                 'Start_date_o_p': [start_date_o_p],
                 'Exp_date_o_p': [end_date_stat],
                 'Strike_o_p': [strike_o_p],
@@ -75,7 +77,7 @@ def f_put():
             print('input_new_df')
             print(input_new_df)
 
-            create_new_postion(input_new_df, path, risk_rate)
+            create_new_postion(input_new_df, path, path_bento, risk_rate)
             st.success('Position is OPEN waiting for $$$')
 
 
@@ -91,7 +93,7 @@ def f_put():
         print('tick', tick)
         pos_type = 'F. Put'
         if refresh_btn:
-            update_postion(csv_position_df, pos_type, risk_rate)
+            update_postion(csv_position_df, pos_type, risk_rate, path_bento)
             # st.success('All data is updated!')
         # else:
         #     print('elseeeeeeeeeee')

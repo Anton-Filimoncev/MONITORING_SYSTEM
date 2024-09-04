@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
-from numba import jit
+from numba import njit
 import math
+import time
 
 # Assumptions:
 # The stock price volatility is equal to the implied volatility and remains constant.
@@ -13,10 +14,8 @@ import math
 # Assignment risks are not considered.
 # Earnings date and stock splits are not considered.
 
-
 def monteCarlo(underlying, rate, sigma, days_to_expiration, closing_days_array, trials, initial_credit,
-                   min_profit, strikes, bsm_func, yahoo_stock):
-
+                   min_profit, strikes, bsm_func, yahoo_stock, instr_type):
     profit_list = []
     price_list = []
     log_returns = np.log(1 + yahoo_stock['Close'].pct_change())
@@ -48,6 +47,12 @@ def monteCarlo(underlying, rate, sigma, days_to_expiration, closing_days_array, 
 
     indices = [0] * length
 
+    stock_price_list = []
+    r_list = []
+    trial_list = []
+
+    start = time.time()
+
     for c in range(trials):
 
         epsilon_cum = 0
@@ -78,72 +83,100 @@ def monteCarlo(underlying, rate, sigma, days_to_expiration, closing_days_array, 
             if stock_price <= 0:
                 stock_price = 0.001
 
-            debit = bsm_func(stock_price, strikes, rate, dt * (days_to_expiration - r), sigma)
+            stock_price_list.append(stock_price)
+            r_list.append(r)
+            trial_list.append(c)
 
-            profit = initial_credit - debit  # Profit if we were to close on current day
             sum = 0
-            profit_list.append(profit)
-            price_list.append(stock_price)
 
             for i in range(length):
                 if indices[i] == 1:  # Checks if combo has been evaluated
                     sum += 1
                     continue
-                else:
-                    if min_profit[i] <= profit:  # If target profit hit, combo has been evaluated
-                        counter1[i] += 1
-                        dtc[i] += r
-                        dtc_history[i, c] = r
-
-                        indices[i] = 1
-                        sum += 1
-                    elif r >= closing_days_array[i]:  # If closing days passed, combo has been evaluated
-                        indices[i] = 1
-                        sum += 1
+                # else:
+                #     if min_profit[i] <= profit:  # If target profit hit, combo has been evaluated
+                #         counter1[i] += 1
+                #         dtc[i] += r
+                #         dtc_history[i, c] = r
+                #
+                #         indices[i] = 1
+                #         sum += 1
+                #     elif r >= closing_days_array[i]:  # If closing days passed, combo has been evaluated
+                #         indices[i] = 1
+                #         sum += 1
 
             if sum == length:  # If all combos evaluated, break and start new trial
                 break
 
+    bsm_df = pd.DataFrame()
+    bsm_df['stock_price'] = stock_price_list
+    bsm_df['trial'] = trial_list
+    bsm_df['strike'] = strikes[0]
+    bsm_df['r'] = r_list
+    bsm_df['dte'] = dt * (days_to_expiration - bsm_df['r'])
+    bsm_df['sigma'] = sigma
+    bsm_df['instr_type'] = instr_type
+    bsm_df['rate'] = rate
+
+    end = time.time() - start
+    print('stock_loop:', end)
+
+    start = time.time()
+    debit = bsm_func(bsm_df)
+    end = time.time() - start
+    print('black76_loop:', end)
+
+    profit = initial_credit - debit  # Profit if we were to close on current day
+
+    bsm_df['profit'] = profit
+
+    counter1 = [0]
+
+
+    for trialus in bsm_df['trial'].unique():
+        one_trial_df = bsm_df[bsm_df['trial'] == trialus]
+        if len(one_trial_df[one_trial_df['profit'] >= min_profit[0]]) > 0:
+            counter1[0] += 1
+
+
+
     pop_counter1 = [c / trials * 100 for c in counter1]
     pop_counter1 = [round(x, 2) for x in pop_counter1]
+
 
     # Taken from Eq. 2.20 from Monte Carlo theory, methods and examples, by Art B. Owen
     pop_counter1_err = [2.58 * (x * (100 - x) / trials) ** (1 / 2) for x in pop_counter1]
     pop_counter1_err = [round(x, 2) for x in pop_counter1_err]
 
-    avg_dtc = []  # Average days to close
-    avg_dtc_error = []
+    # avg_dtc = []  # Average days to close
+    # avg_dtc_error = []
+    #
+    # # Taken from Eq. 2.34 from Monte Carlo theory, methods and examples, by Art B. Owen, 2013
+    # for index in range(length):
+    #     if counter1[index] > 0:
+    #         avg_dtc.append(dtc[index] / counter1[index])
+    #
+    #         n_a = counter1[index]
+    #         mu_hat_a = dtc[index] / n_a
+    #         summation = 0
+    #
+    #         for value in dtc_history[index, :]:
+    #             if value == 0:  # if 0 then it means that min_profit wasn't hit
+    #                 continue
+    #
+    #             summation = summation + (value - mu_hat_a) ** 2
+    #
+    #         s_a_squared = (1 / n_a) * summation  # changed from n_a - 1 for simplicity
+    #         std_dev = ((n_a - 1) * s_a_squared) ** (1 / 2) / n_a
+    #         avg_dtc_error.append(2.58 * std_dev)
+    #
+    #     else:
+    #         avg_dtc.append(0)
+    #         avg_dtc_error.append(0)
+    #
+    # avg_dtc = [round(x, 2) for x in avg_dtc]
+    #
+    # avg_dtc_error = [round(x, 2) for x in avg_dtc_error]
 
-    # Taken from Eq. 2.34 from Monte Carlo theory, methods and examples, by Art B. Owen, 2013
-    for index in range(length):
-        if counter1[index] > 0:
-            avg_dtc.append(dtc[index] / counter1[index])
-
-            n_a = counter1[index]
-            mu_hat_a = dtc[index] / n_a
-            summation = 0
-
-            for value in dtc_history[index, :]:
-                if value == 0:  # if 0 then it means that min_profit wasn't hit
-                    continue
-
-                summation = summation + (value - mu_hat_a) ** 2
-
-            s_a_squared = (1 / n_a) * summation  # changed from n_a - 1 for simplicity
-            std_dev = ((n_a - 1) * s_a_squared) ** (1 / 2) / n_a
-            avg_dtc_error.append(2.58 * std_dev)
-
-        else:
-            avg_dtc.append(0)
-            avg_dtc_error.append(0)
-
-    avg_dtc = [round(x, 2) for x in avg_dtc]
-
-    avg_dtc_error = [round(x, 2) for x in avg_dtc_error]
-    dist_df = pd.DataFrame({
-        'Stock_price': price_list,
-        'Profit': profit_list,
-    })
-
-    cvar = dist_df.sort_values('Profit')[:int(len(dist_df)*0.05)]['Profit'].mean()
-    return pop_counter1, pop_counter1_err, avg_dtc, avg_dtc_error, cvar
+    cvar = bsm_df.sort_values('profit')[:int(len(bsm_df)*0.05)]['profit'].mean()
+    return pop_counter1, pop_counter1_err, cvar

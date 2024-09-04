@@ -114,6 +114,9 @@ def hist_vol_analysis(full_txt, ticker, exp_date):
 
 def greeks_start(ticker, exp_date):
     ticker = ticker.split('=')[0]
+    if ticker == 'ZB':
+        ticker = 'US'
+    print(ticker)
     cur_date = datetime.datetime.now().strftime('%Y_%m_%d')
 
     print('exp_date', exp_date)
