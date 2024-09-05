@@ -325,25 +325,40 @@ def price_vol_matrix(df, dte):
 
 
 
-    temp_df = pd.DataFrame({
-        'Fist': prices_list[0],
-        'Sec': prices_list[1]
-    })
 
-    temp_df = temp_df.astype('str')
-    temp_df['X'] = temp_df['Fist'] + '_' + temp_df['Sec']
+    try:
+        temp_df = pd.DataFrame({
+            'Fist': prices_list[0],
+            'Sec': prices_list[1]
+        })
 
-    fig_map = go.Figure(data=go.Heatmap(
-        z=full_matrix.round(2).values.tolist(),
-        x=temp_df['X'] .values.tolist(),
-        y=full_matrix.index.values.tolist(),
-        hoverongaps=False,
-        colorscale = pl_colorscale,
-        colorbar_thickness=24,
-        xgap=0.5,
-        ygap=0.5,
-    )
-    )
+        temp_df = temp_df.astype('str')
+        temp_df['X'] = temp_df['Fist'] + '_' + temp_df['Sec']
+
+
+        fig_map = go.Figure(data=go.Heatmap(
+            z=full_matrix.round(2).values.tolist(),
+            x=temp_df['X'] .values.tolist(),
+            y=full_matrix.index.values.tolist(),
+            hoverongaps=False,
+            colorscale = pl_colorscale,
+            colorbar_thickness=24,
+            xgap=0.5,
+            ygap=0.5,
+        )
+        )
+    except:
+        fig_map = go.Figure(data=go.Heatmap(
+            z=full_matrix.round(2).values.tolist(),
+            x=full_matrix.columns.tolist(),
+            y=full_matrix.index.values.tolist(),
+            hoverongaps=False,
+            colorscale = pl_colorscale,
+            colorbar_thickness=24,
+            xgap=0.5,
+            ygap=0.5,
+        )
+        )
 
     fig_map.update_traces(
 
@@ -635,26 +650,39 @@ def price_vol_matrix_covered(df, dte):
     # pl_colorscale = 'Reds'
 
 
+    try:
+        temp_df = pd.DataFrame({
+            'Fist': prices_list[0],
+            'Sec': prices_list[1]
+        })
 
-    temp_df = pd.DataFrame({
-        'Fist': prices_list[0],
-        'Sec': prices_list[1]
-    })
+        temp_df = temp_df.astype('str')
+        temp_df['X'] = temp_df['Fist'] + '_' + temp_df['Sec']
 
-    temp_df = temp_df.astype('str')
-    temp_df['X'] = temp_df['Fist'] + '_' + temp_df['Sec']
 
-    fig_map = go.Figure(data=go.Heatmap(
-        z=full_matrix.round(2).values.tolist(),
-        x=temp_df['X'] .values.tolist(),
-        y=full_matrix.index.values.tolist(),
-        hoverongaps=False,
-        colorscale = pl_colorscale,
-        colorbar_thickness=24,
-        xgap=0.5,
-        ygap=0.5,
-    )
-    )
+        fig_map = go.Figure(data=go.Heatmap(
+            z=full_matrix.round(2).values.tolist(),
+            x=temp_df['X'] .values.tolist(),
+            y=full_matrix.index.values.tolist(),
+            hoverongaps=False,
+            colorscale = pl_colorscale,
+            colorbar_thickness=24,
+            xgap=0.5,
+            ygap=0.5,
+        )
+        )
+    except:
+        fig_map = go.Figure(data=go.Heatmap(
+            z=full_matrix.round(2).values.tolist(),
+            x=full_matrix.columns.tolist(),
+            y=full_matrix.index.values.tolist(),
+            hoverongaps=False,
+            colorscale = pl_colorscale,
+            colorbar_thickness=24,
+            xgap=0.5,
+            ygap=0.5,
+        )
+        )
 
     fig_map.update_traces(
 

@@ -24,13 +24,7 @@ def get_tick_from_csv_name(csv_position_df):
 
 
 def _gbs(option_type, fs, x, t, r, b, v):
-    print('option_type', option_type)
-    print('fs', fs)
-    print('x', x)
-    print('t', t)
-    print('r', r)
-    print('b', b)
-    print('v', v)
+
     # -----------
     # Create preliminary calculations
     t__sqrt = math.sqrt(t)
@@ -51,10 +45,11 @@ def _gbs(option_type, fs, x, t, r, b, v):
         value = x * math.exp(-r * t) * norm.cdf(-d2) - (fs * math.exp((b - r) * t) * norm.cdf(-d1))
         delta = -math.exp((b - r) * t) * norm.cdf(-d1)
         gamma = math.exp((b - r) * t) * norm.pdf(d1) / (fs * v * t__sqrt)
-        theta = -(fs * v * math.exp((b - r) * t) * norm.pdf(d1)) / (2 * t__sqrt) + (b - r) * fs * math.exp(
-            (b - r) * t) * norm.cdf(-d1) + r * x * math.exp(-r * t) * norm.cdf(-d2)
-        vega = math.exp((b - r) * t) * fs * t__sqrt * norm.pdf(d1)
+        theta = (-(fs * v * math.exp((b - r) * t) * norm.pdf(d1)) / (2 * t__sqrt) + (b - r) * fs * math.exp(
+            (b - r) * t) * norm.cdf(-d1) + r * x * math.exp(-r * t) * norm.cdf(-d2))/100
+        vega = (math.exp((b - r) * t) * fs * t__sqrt * norm.pdf(d1))/100
         rho = -x * t * math.exp(-r * t) * norm.cdf(-d2)
+
 
     return value, delta, gamma, theta, vega, rho
 
@@ -631,8 +626,7 @@ def create_new_postion(input_new_df, path, path_bento, risk_rate):
         #                                                                            input_new_df['IV'].iloc[
         #                                                                                0] / 100)
 
-        input_new_df['delta'] = ((delta_opt * input_new_df['Number_pos'].iloc[0]) + (
-                1 * input_new_df['Number_pos'].iloc[0])) / 2
+        input_new_df['delta'] = ((delta_opt * input_new_df['Number_pos'].iloc[0]) -1)
         input_new_df['gamma'] = (gamma_opt * input_new_df['Number_pos'].iloc[0])
         input_new_df['theta'] = (theta_opt * input_new_df['Number_pos'].iloc[0])
         input_new_df['vega'] = (vega_opt * input_new_df['Number_pos'].iloc[0])
@@ -1206,12 +1200,21 @@ def update_postion_dia(csv_position_df, pos_type, risk_rate, path_bento, input_u
     value_short, delta_short, gamma_short, theta_short, vega_short, rho_short = _gbs(local_side, postion_df[
         'underlying_short_Current'].iloc[0], postion_df['Strike_short'].iloc[0], postion_df['DTE_short'].iloc[
                                                                                          0] / 365, 0.04, 0.04,
-                                                                                     postion_df['IV_SHORT'].iloc[0])
+                                                                                     postion_df['IV_SHORT'].iloc[0]/100)
     value_long, delta_long, gamma_long, theta_long, vega_long, rho_long = _gbs(local_side, postion_df[
         'underlying_long_Current'].iloc[0], postion_df['Strike_long'].iloc[0], postion_df['DTE_long'].iloc[
                                                                                    0] / 365, 0.04, 0.04,
                                                                                postion_df['IV_LONG'].iloc[
-                                                                                   0])
+                                                                                   0]/100)
+
+    print('delta_short', delta_short)
+    print('gamma_short', gamma_short)
+    print('theta_short', theta_short)
+    print('vega_short', vega_short)
+    print('delta_long', delta_long)
+    print('gamma_long', gamma_long)
+    print('theta_long', theta_long)
+    print('vega_long', vega_long)
 
     postion_df['delta'] = ((delta_short * postion_df['Number_pos_short'].iloc[0]) + (
             delta_long * postion_df['Number_pos_long'].iloc[0])) / 2
@@ -1307,7 +1310,7 @@ def update_postion_dia(csv_position_df, pos_type, risk_rate, path_bento, input_u
 
     postion_df[['%_days_elapsed', 'Current_ROI', 'Current_RR_ratio', ]] = postion_df[['%_days_elapsed', 'Current_ROI',
                                                                                       'Current_RR_ratio']] * 100
-    postion_df = postion_df.round(2)
+
 
     postion_df.to_csv(csv_position_df, index=False)
     print('postion_df DONE!!!!')
@@ -1328,6 +1331,9 @@ def update_postion_dia(csv_position_df, pos_type, risk_rate, path_bento, input_u
 
     wight_df.columns = ['N1', 'V1', 'N2', 'V2']
     pl, marg = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0]
+
+    postion_df = postion_df.round(4)
+    wight_df = wight_df.round(4)
 
     return wight_df, pl, marg
 
@@ -1360,9 +1366,15 @@ def update_postion_cover(csv_position_df, pos_type, risk_rate, path_bento, input
     if postion_df['Position_side'].iloc[0] == 'CALL':
         local_side = 'c'
 
+    print('local_side', local_side)
+    print('Underlying_Current', postion_df['Underlying_Current'].iloc[0])
+    print('Strike', postion_df['Strike'].iloc[0])
+    print('DAYS_remaining', postion_df['DAYS_remaining'].iloc[0] / 365)
+    print('IV_Current', postion_df['IV_Current'].iloc[0] / 100)
+
     value_opt, delta_opt, gamma_opt, theta_opt, vega_opt, rho_opt = _gbs(local_side, postion_df[
-        'Underlying_Current'].iloc[0], postion_df['Strike'].iloc[0], postion_df['DTE'].iloc[
-                                                                             0] / 365, 0.04, 0.04,
+        'Underlying_Current'].iloc[0], postion_df['Strike'].iloc[0], postion_df['DAYS_remaining'].iloc[
+                                                                             0]/ 365, 0.04, 0.04,
                                                                          postion_df['IV_Current'].iloc[
                                                                              0] / 100)
     # value, delta, gamma, theta, vega, rho = _gbs(local_side, postion_df[
@@ -1371,8 +1383,12 @@ def update_postion_cover(csv_position_df, pos_type, risk_rate, path_bento, input
     #                                                                            postion_df['IV_Current'].iloc[
     #                                                                                0] / 100)
 
-    postion_df['delta'] = ((delta_opt * postion_df['Number_pos'].iloc[0]) + (
-            1 )) / 2
+    print('theta_opt', theta_opt)
+    print('vega_opt', vega_opt)
+    print('gamma_opt', gamma_opt)
+    print('Number_pos', postion_df['Number_pos'].iloc[0])
+
+    postion_df['delta'] = ((delta_opt * postion_df['Number_pos'].iloc[0]) - 1)
     postion_df['gamma'] = (gamma_opt * postion_df['Number_pos'].iloc[0])
     postion_df['theta'] = (theta_opt * postion_df['Number_pos'].iloc[0])
     postion_df['vega'] = (vega_opt * postion_df['Number_pos'].iloc[0])
@@ -1435,7 +1451,7 @@ def update_postion_cover(csv_position_df, pos_type, risk_rate, path_bento, input
 
     postion_df[['%_days_elapsed', 'Current_ROI', 'Current_RR_ratio', ]] = postion_df[['%_days_elapsed', 'Current_ROI',
                                                                                       'Current_RR_ratio']] * 100
-    postion_df = postion_df.round(2)
+    postion_df = postion_df.round(4)
 
     postion_df.to_csv(csv_position_df, index=False)
     print('postion_df DONE!!!!')
@@ -1998,7 +2014,8 @@ def return_postion(csv_position_df, pos_type, risk_rate):
 
         greeks_df = pd.concat([greeks_position1, greeks_position2], axis=1, )
         greeks_df.columns = ['N1', 'V1', 'N2', 'V2']
-        greeks_df.round(3)
+        greeks_df = greeks_df.round(4)
+        wight_df = wight_df.round(2)
 
         pl, marg = postion_df['Current_PL'].iloc[0], postion_df['Current_Margin'].iloc[0]
 
