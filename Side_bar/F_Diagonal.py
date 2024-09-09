@@ -65,7 +65,7 @@ def f_dia():
             with col14:
                 num_pos_short_o_p = st.number_input('Positions SHORT', min_value=-100, max_value=365, value=-1)
                 num_pos_long_o_p = st.number_input('Positions LONG', min_value=-100, max_value=365, value=1)
-                multiplicator_o_p = st.number_input('Multiplicator', min_value=1, max_value=100000, value=100)
+                multiplicator_o_p = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
                 size_o_p = st.number_input('Size', min_value=1, max_value=100000, value=100)
                 commission_o_p = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
 

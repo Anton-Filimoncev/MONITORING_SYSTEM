@@ -61,8 +61,7 @@ def f_cover():
             with col14:
                 num_pos_short_o_p = st.number_input('Positions OPT', min_value=-100, max_value=365, value=-1)
                 num_pos_long_o_p = st.number_input('Positions STOCK', min_value=-100, max_value=365, value=1)
-                multiplicator_o_p = st.number_input('Multiplicator', min_value=1, max_value=100000, value=100)
-                size_o_p = st.number_input('Size', min_value=1, max_value=100000, value=100)
+                multiplicator_o_p = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
 
 
         submit_button = st.form_submit_button('Commit')
