@@ -92,7 +92,6 @@ def f_cover():
             'Underlying': [start_b_a_price],
             'Underlying_stock': [start_b_a_price_stock],
             'Multiplicator': [multiplicator_o_p],
-            'Size': [size_o_p],
         })
 
 
