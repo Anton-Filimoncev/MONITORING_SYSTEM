@@ -63,7 +63,7 @@ def price_vol_matrix(df, dte):
     except:
         input_df = df.iloc[0]
     print(input_df)
-    print(input_df['underlying_short'])
+
     full_matrix = pd.DataFrame()
 
     # если позиция уже открыта, переопределяем переменные, если нет, то по открытию считаем
@@ -76,10 +76,23 @@ def price_vol_matrix(df, dte):
 
     except:
         print('AAAAAAA except')
+        try:
+            input_df['underlying_call'] = input_df['underlying_Current']
+            input_df['underlying_put'] = input_df['underlying_Current']
+        except:
+            input_df['underlying_call'] = input_df['Start_underlying']
+            input_df['underlying_put'] = input_df['Start_underlying']
         pass
 
-    mean_sigma = (input_df['IV_short'] + input_df['IV_long'])/2
-    mean_underlying = (input_df['underlying_short'] + input_df['underlying_long'])/2
+        input_df['underlying_short'] = input_df['underlying_call']
+        input_df['underlying_long'] = input_df['underlying_put']
+
+    try:
+        mean_sigma = (input_df['IV_short'] + input_df['IV_long'])/2
+        mean_underlying = (input_df['underlying_short'] + input_df['underlying_long'])/2
+    except:
+        mean_sigma = (input_df['IV_Call'] + input_df['IV_Put'])/2
+        mean_underlying = (input_df['underlying_call'] + input_df['underlying_put'])/2
 
     # min_dte = np.min([input_df['DTE_short'], input_df['DTE_long']])
     # max_dte = np.max([input_df['DTE_short'], input_df['DTE_long']])
@@ -87,16 +100,29 @@ def price_vol_matrix(df, dte):
 
     df = pd.DataFrame()
 
-    df['Days to EXP'] = [input_df['DTE_short'], input_df['DTE_long']]
+
+    try:
+        df['Days to EXP'] = [input_df['DTE_short'], input_df['DTE_long']]
+        df['IV'] = [input_df['IV_SHORT'], input_df['IV_LONG']]
+        df['strike'] = [input_df['Strike_short'], input_df['Strike_long']]
+        df['underlying'] = [input_df['underlying_short'], input_df['underlying_long']]
+        df['Count'] = [input_df['Number_pos_short'], input_df['Number_pos_long']]
+        df['prime'] = [input_df['Prime_short'], input_df['Prime_long']]
+    except:
+        # стренгл
+        df['Days to EXP'] = [input_df['DTE'], input_df['DTE']]
+        df['IV'] = [input_df['IV_Call'], input_df['IV_Put']]
+        df['strike'] = [input_df['Strike_Call'], input_df['Strike_Put']]
+        df['underlying'] = [input_df['underlying_call'], input_df['underlying_put']]
+        df['Count'] = [input_df['Number_pos'], input_df['Number_pos']]
+        df['prime'] = [input_df['Prime_Call'], input_df['Prime_Put']]
+
     df['rate'] = input_df['Rate']
     df['Type'] = input_df['Position_side']
     df['Symb'] = input_df['Symbol']
-    df['IV'] = [input_df['IV_SHORT'], input_df['IV_LONG']]
     # df['IV'] = df['IV'] / 100
-    df['strike'] = [input_df['Strike_short'], input_df['Strike_long']]
-    df['underlying'] = [input_df['underlying_short'], input_df['underlying_long']]
-    df['Count'] = [input_df['Number_pos_short'], input_df['Number_pos_long']]
-    df['prime'] = [input_df['Prime_short'], input_df['Prime_long']]
+
+
     df['multiplier'] = input_df['Multiplicator']
 
     min_dte = df['Days to EXP'].min()
