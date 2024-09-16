@@ -29,6 +29,8 @@ with st.sidebar.expander('FUTURES'):
     infoType_F_ST = st.checkbox("F. Strangle")
     infoType_F_DIA = st.checkbox("F. Diagonal")
     infoType_F_COVER = st.checkbox("F. Covered")
+    infoType_F_RATIO_112 = st.checkbox("F. Ratio 112")
+
     # infoType = st.radio(
     #     "Choose an info type",
     #     ('F. Put', 'F. Call'), index=None
@@ -74,6 +76,10 @@ if infoType_F_DIA:
 # =====================================   Covered
 if infoType_F_COVER:
     f_cover()
+
+# =====================================   Ratio 112
+if infoType_F_RATIO_112:
+    f_ratio_112()
 
 # # ************************************* OPTIONS ***************************************
 #

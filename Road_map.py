@@ -10,4 +10,7 @@ from Side_bar.F_Call import *
 from Side_bar.F_Strangle import *
 from Side_bar.F_Diagonal import *
 from Side_bar.F_Cover import *
+from Side_bar.F_Cover import *
+from Side_bar.F_Ratio_112 import *
+
 

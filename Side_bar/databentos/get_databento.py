@@ -146,6 +146,11 @@ def _gbs_test_inputs(option_type, fs, x, t, r, b, v):
 #         b = cost of carry, v = implied volatility
 # Outputs: value, delta, gamma, theta, vega, rho
 def _gbs(option_type, fs, x, t, r, b, v):
+    _debug("Debugging Information: _gbs()")
+    # -----------
+    # Test Inputs (throwing an exception on failure)
+    _gbs_test_inputs(option_type, fs, x, t, r, b, v)
+
     # -----------
     # Create preliminary calculations
     t__sqrt = math.sqrt(t)
@@ -154,6 +159,7 @@ def _gbs(option_type, fs, x, t, r, b, v):
 
     if option_type == "c":
         # it's a call
+        _debug("     Call Option")
         value = fs * math.exp((b - r) * t) * norm.cdf(d1) - x * math.exp(-r * t) * norm.cdf(d2)
         delta = math.exp((b - r) * t) * norm.cdf(d1)
         gamma = math.exp((b - r) * t) * norm.pdf(d1) / (fs * v * t__sqrt)
@@ -163,6 +169,7 @@ def _gbs(option_type, fs, x, t, r, b, v):
         rho = x * t * math.exp(-r * t) * norm.cdf(d2)
     else:
         # it's a put
+        _debug("     Put Option")
         value = x * math.exp(-r * t) * norm.cdf(-d2) - (fs * math.exp((b - r) * t) * norm.cdf(-d1))
         delta = -math.exp((b - r) * t) * norm.cdf(-d1)
         gamma = math.exp((b - r) * t) * norm.pdf(d1) / (fs * v * t__sqrt)
@@ -170,6 +177,11 @@ def _gbs(option_type, fs, x, t, r, b, v):
             (b - r) * t) * norm.cdf(-d1) + r * x * math.exp(-r * t) * norm.cdf(-d2)
         vega = math.exp((b - r) * t) * fs * t__sqrt * norm.pdf(d1)
         rho = -x * t * math.exp(-r * t) * norm.cdf(-d2)
+
+    _debug("     d1= {0}\n     d2 = {1}".format(d1, d2))
+    _debug("     delta = {0}\n     gamma = {1}\n     theta = {2}\n     vega = {3}\n     rho={4}".format(delta, gamma,
+                                                                                                        theta, vega,
+                                                                                                        rho))
 
     return value, delta, gamma, theta, vega, rho
 
@@ -260,8 +272,7 @@ def find_sigma(
     return np.nan
 
 
-def get_bento_data(ticker, ticker_b, current_price, nearest_dte, strike, side, path_bento):
-
+def get_bento_data(ticker, ticker_b, nearest_dte, side, path_bento):
     if datetime.now().weekday() != 0:
         start_date_req = (datetime.now() - relativedelta(hours=37)).strftime("%Y-%m-%dT%H:%M:%S")
         exp_start_date_req = (datetime.now() - relativedelta(days=2)).strftime("%Y-%m-%d")
@@ -311,12 +322,8 @@ def get_bento_data(ticker, ticker_b, current_price, nearest_dte, strike, side, p
     full_chains.reset_index(drop=True).to_excel('full_chains.xlsx')
 
     print(datetime.now())
-    print('nearest_dte')
-    print(nearest_dte)
 
-    nearest_dte_symb = (datetime.now() + relativedelta(days=int(nearest_dte))).month
-
-
+    nearest_dte_symb = (datetime.now() + relativedelta(days=nearest_dte)).month
 
     month_code_dict = {1: "F", 2: "G", 3: "H", 4: "J", 5: "K", 6: "M", 7: "N", 8: "Q", 9: "U", 10: "V", 11: "X",
                        12: "Z"}
@@ -324,16 +331,13 @@ def get_bento_data(ticker, ticker_b, current_price, nearest_dte, strike, side, p
     nearest_dte_symb_num = month_code_dict[nearest_dte_symb]
     print('nearest_dte_symb_num')
     print(nearest_dte_symb_num)
-    cur_year = str((datetime.now() + relativedelta(days=int(nearest_dte))).year)[-1]
+    cur_year = str(datetime.now().year)[-1]
     print('cur_year')
     print(cur_year)
     needed_contract = ticker_b + nearest_dte_symb_num + cur_year
-
-    print('needed_contract')
-    print(needed_contract)
-
     needed_chain = full_chains[full_chains['symb'] == needed_contract]
-
+    print('needed_chain')
+    print(needed_chain)
     needed_chain = needed_chain.reset_index(drop=True)
 
     print('underlying_price11111', str(int(underlying_price)))
