@@ -4,7 +4,7 @@ import pandas as pd
 import glob
 from .Support import *
 import datetime
-from .matrix import price_vol_matrix
+from .matrix import price_vol_matrix, price_vol_matrix_covered
 from .STRANGLE_selection.MARKET_DATA import *
 from .STRANGLE_selection.strang_select import *
 from .databentos.get_databento import get_bento_data
@@ -36,7 +36,7 @@ def f_strangle():
             col11, col12, col13, col14 = st.columns(4)
             with col11:
                 percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
-                end_date_stat = st.date_input('EXP date')
+                exp_date = st.date_input('EXP date')
                 iv_call = st.number_input('IV CALL', step=0.01, format="%.2f", min_value=0., max_value=5000.,
                                            value=0.0)
                 iv_put = st.number_input('IV PUT', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
@@ -47,27 +47,27 @@ def f_strangle():
                     start_b_a_price_yahoo = yf.download(ticker)['Close'].iloc[-1]
                 except:
                     start_b_a_price_yahoo = 0.
-                start_date_o_p = st.date_input('Start date', datetime.datetime.now())
-                start_b_a_price = st.number_input('Start BA Price', step=0.1, format="%.2f", min_value=0.,
+                start_date = st.date_input('Start date', datetime.datetime.now())
+                underlying = st.number_input('Start BA Price', step=0.1, format="%.2f", min_value=0.,
                                                         max_value=50000., value=0.)
-                margin_o_p = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000.,
+                margin = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000.,
                                              value=6000.)
 
             with col13:
-                prime_call_o_p = st.number_input('Start Prime CALL', step=0.01, format="%.2f", min_value=0.,
+                prime_call = st.number_input('Start Prime CALL', step=0.01, format="%.2f", min_value=0.,
                                                   max_value=5000.)
-                prime_put_o_p = st.number_input('Start Prime PUT', step=0.01, format="%.2f", min_value=0.,
+                prime_put = st.number_input('Start Prime PUT', step=0.01, format="%.2f", min_value=0.,
                                                  max_value=5000.)
-                strike_call_o_p = st.number_input('Strike CALL', step=0.5, format="%.1f", min_value=1.,
+                strike_call = st.number_input('Strike CALL', step=0.5, format="%.1f", min_value=1.,
                                                    max_value=5000., value=100.)
-                strike_put_o_p = st.number_input('Strike PUT', step=0.5, format="%.1f", min_value=1., max_value=5000.,
+                strike_put = st.number_input('Strike PUT', step=0.5, format="%.1f", min_value=1., max_value=5000.,
                                                   value=100.)
 
 
             with col14:
-                num_pos_o_p = st.number_input('Positions', min_value=-100, max_value=365, value=1)
-                multiplicator_o_p = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
-                commission_o_p = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000.,
+                count = st.number_input('Positions', min_value=-100, max_value=365, value=1)
+                multiplier = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
+                commission = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000.,
                                                  value=3.4)
 
         submit_button = st.form_submit_button('Commit')
@@ -80,30 +80,57 @@ def f_strangle():
             del st.session_state[f'position_data']
         except:
             pass
-        input_new_df = pd.DataFrame({
-            'Position_type': ['F. Strangle'],
-            'Symbol': [ticker],
-            'Symbol Bento': [ticker],
-            'Start_date': [start_date_o_p],
-            'Exp_date': [end_date_stat],
-            'Rate': [risk_rate],
-            'IV_Call': [iv_call],
-            'IV_Put': [iv_put],
-            'Percentage_Array': [percentage_array],
-            'Strike_Call': [strike_call_o_p],
-            'Strike_Put': [strike_put_o_p],
-            'Number_pos': [num_pos_o_p],
-            'Prime_Call': [prime_call_o_p],
-            'Prime_Put': [prime_put_o_p],
-            'Commission': [commission_o_p],
-            'Margin': [margin_o_p],
-            'Start_underlying': [start_b_a_price],
-            'Multiplicator': [multiplicator_o_p],
-
+        days_to_expiration = (exp_date - datetime.datetime.now().date()).days
+        print('days_to_expiration', days_to_expiration)
+        # ---- OPTION ---
+        df_put = pd.DataFrame({
+            'position_type': ['F. Strangle'],
+            'symbol': [ticker],
+            'symbol_bento': [ticker],
+            'side': ['PUT'],
+            'strike': [strike_put],
+            'days_to_exp': [days_to_expiration],
+            'exp_date': [exp_date],
+            'count': [count],
+            'underlying': [underlying],
+            'rate': [risk_rate],
+            # 'closing_days_array': [percentage_array],
+            'prime': [prime_put],
+            'iv': [iv_put],
+            'percentage_array': [percentage_array],
+            'multiplier': [multiplier],
+            'commission': [commission],
+            'start_date': [start_date],
+            'margin': [margin],
         })
+
+        # ---- FUTURES ---
+        df_call = pd.DataFrame({
+            'position_type': ['F. Strangle'],
+            'symbol': [ticker],
+            'symbol_bento': [ticker],
+            'side': ['CALL'],
+            'strike': [strike_call],
+            'days_to_exp': [days_to_expiration],
+            'exp_date': [exp_date],
+            'count': [count],
+            'underlying': [underlying],
+            'rate': [risk_rate],
+            # 'closing_days_array': [percentage_array],
+            'prime': [prime_call],
+            'iv': [iv_call],
+            'percentage_array': [percentage_array],
+            'multiplier': [multiplier],
+            'commission': [commission],
+            'start_date': [start_date],
+            'margin': [margin],
+        })
+
+        input_new_df = pd.concat([df_put, df_call]).reset_index(drop=True)
 
         if f'position_data' not in st.session_state:
             st.session_state[f'position_data'] = input_new_df
+
 
         print('st.session_state')
         print(st.session_state[f'position_data'])
@@ -120,18 +147,15 @@ def f_strangle():
     # try:
     if infoType_plot_matrix:
         emulate_df = st.session_state[f'position_data'].copy()
-        emulate_df['DTE'] = (emulate_df['Exp_date'] - emulate_df['Start_date']).values[0].days
 
         position_emulate = emulate_position(emulate_df, path, path_bento, risk_rate)
         # if f'position_emulate' not in st.session_state:
         #     st.session_state[f'position_emulate'] = position_emulate
 
-        dte = st.slider("Select DTE", 1, emulate_df['DTE'].values[0], value=emulate_df['DTE'].values[0])
+        dte = st.slider("Select DTE", 1, emulate_df['days_to_exp'].values[0], value=emulate_df['days_to_exp'].values[0])
         print('dteeeeeeeeeeeeee', dte)
 
-        emulate_df['underlying_short'] = emulate_df['Start_underlying']
-        emulate_df['underlying_long'] = emulate_df['Start_underlying']
-        fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix(emulate_df, dte)
+        fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(emulate_df, dte)
 
         st.dataframe(position_emulate, hide_index=True, column_config=None)
         st.text(f'Weighted Profit: {weighted_profit_mtrx}')
@@ -139,12 +163,7 @@ def f_strangle():
         st.text(f'Weighted R/R: {weighted_rr_mtrx}')
         # st.dataframe(fig_map.style.apply(highlight_mtx, axis=None))
         st.plotly_chart(fig_map)
-        # except Exception as err:
-        #     print(f'Exception {err}')
-        #     st.header(f'Pleas Commit Data')
-        #     pass
 
-        # show all open position
         print(filenames)
 
     with st.expander('F. Strangle Position '):
@@ -169,27 +188,38 @@ def f_strangle():
             iv_call_cur = st.number_input('Cur IV Call', step=0.01, format="%.2f", min_value=0., max_value=5000.,
                                           value=0.0)
         with col24:
-            b_a_price_cur = st.number_input('Cur BA Price', step=0.1, format="%.2f", min_value=0.,
+            underlying_cur = st.number_input('Cur BA Price', step=0.1, format="%.2f", min_value=0.,
                                                   max_value=50000., value=start_b_a_price_yahoo)
 
         update_btn = st.button("Update Position", type="primary")
 
         pos_type = 'F. Strangle'
 
+
     if update_btn:
         print('update_btn')
-        input_update_df = pd.DataFrame({
-            'Position_type': ['F. Strangle'],
-            'IV_Put_Current': [iv_put_cur],
-            'IV_Call_Current': [iv_call_cur],
-            'Prime_put_Current': [prime_put_cur],
-            'Prime_call_Current': [prime_call_cur],
-            'underlying_Current': [b_a_price_cur],
+        df_put_update = pd.DataFrame({
+            'position_type': ['F. Strangle'],
+            'iv_current': [iv_put_cur],
+            'prime_current': [prime_put_cur],
+            'underlying_current': [underlying_cur],
         })
 
-        update_postion_strangle(dia_type, pos_type, risk_rate, path_bento, input_update_df)
+        # ---- FUTURES ---
+        df_call_update = pd.DataFrame({
+            'position_type': ['F. Strangle'],
+            'iv_current': [iv_call_cur],
+            'prime_current': [prime_call_cur],
+            'underlying_current': [underlying_cur],
+        })
+
+        input_update_df = pd.concat([df_put_update, df_call_update]).reset_index(drop=True)
+
+        update_postion_cover(dia_type, pos_type, risk_rate, path_bento, input_update_df)
 
         st.success('Position Updated!')
+
+
 
     st.header("OPENED POSITIONS")
     # with st.form(key='show_position'):
@@ -205,7 +235,7 @@ def f_strangle():
             print('csv_position_df', csv_position_df)
             tick = get_tick_from_csv_name(csv_position_df)
             print('tick', tick)
-            pos_type = 'F. Diagonal'
+            pos_type = 'F. Strangle'
 
             # st.success('All data is updated!')
             # else:
@@ -222,8 +252,8 @@ def f_strangle():
                 with st.container():
                     print('position_df', position_df)
 
-                    dte = st.slider("DTE", 1, full_postion_df['DTE'].values[0], value=full_postion_df['DTE'].values[0])
-                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix(
+                    dte = st.slider("DTE", 1, full_postion_df['days_to_exp'].values[0], value=full_postion_df['days_to_exp'].values[0])
+                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(
                         csv_position_df, dte)
 
                     st.text(tick)

@@ -415,62 +415,38 @@ def price_vol_matrix(df, dte):
 
 def price_vol_matrix_covered(df, dte):
     try:
-        input_df = pd.read_csv(df).iloc[0]
+        input_df = pd.read_csv(df)
     except:
-        input_df = df.iloc[0]
-    print(input_df)
+        input_df = df
+
     full_matrix = pd.DataFrame()
 
-    # если позиция уже открыта, переопределяем переменные, если нет, то по открытию считаем
-
     try:
-        input_df['IV'] = input_df['IV_Current']
-        input_df['Underlying'] = input_df['Underlying_Current']
-        input_df['Underlying_stock'] = input_df['Underlying_stock_Current']
-
+        input_df['underlying'] = input_df['underlying_current']
+        input_df['sigma'] = input_df['iv_current']
     except:
-        print('AAAAAAA except')
-        pass
+        input_df['sigma'] = input_df['iv']
 
-    mean_sigma = input_df['IV']
-    mean_underlying = (input_df['Underlying_stock'] + input_df['Underlying'])/2
+    print('input_df')
+    print(input_df)
 
-    # min_dte = np.min([input_df['DTE_short'], input_df['DTE_long']])
-    # max_dte = np.max([input_df['DTE_short'], input_df['DTE_long']])
-    # spread = np.max([input_df['underlying_short'], input_df['underlying_long']]) - np.min([input_df['underlying_short'], input_df['underlying_long']])
+    mean_sigma = input_df['sigma'].mean()
+    mean_underlying = input_df['underlying'].mean()
 
-    df = pd.DataFrame()
-    df['Days to EXP'] = [input_df['DTE'], input_df['DTE']]
-    df['rate'] = input_df['Rate']
-    df['Type'] = input_df['Position_side']
-    df['Symb'] = input_df['Symbol']
-    df['IV'] = [input_df['IV'], input_df['IV']]
-    # df['IV'] = df['IV'] / 100
-    df['strike'] = [input_df['Strike'], input_df['Strike']]
-    df['underlying'] = [input_df['Underlying'], input_df['Underlying_stock']]
-    df['Count'] = [input_df['Number_pos'], input_df['Number_pos']]
-    df['prime'] = [input_df['Prime'], input_df['Prime']]
-    df['multiplier'] = input_df['Multiplicator']
-
-    min_dte = df['Days to EXP'].min()
-    max_dte = df['Days to EXP'].max()
-    spread = df['underlying'].max() - df['underlying'].min()
-
-    print('df')
-    print(df)
-
+    min_dte = input_df['days_to_exp'].min()
+    max_dte = input_df['days_to_exp'].max()
+    spread = input_df['underlying'].max() - input_df['underlying'].min()
     #
     #
     # Позиции с одной стоимость БА
     #
     #
-
-    if input_df['Underlying_stock'] == input_df['Underlying']:
-        for num, row in df.iterrows():
-            position_dte = row['Days to EXP']
+    if input_df['underlying'].min() == input_df['underlying'].max():
+        for num, row in input_df.iterrows():
+            position_dte = row['days_to_exp']
             row['rate'] = row['rate'] / 100
-            side = row['Type']
-            yahoo_stock = yf.download(row['Symb'])
+            side = row['side']
+            yahoo_stock = yf.download(row['symbol'])
             hist_vol = volatility_calc(yahoo_stock['Close'], 245)
             # print('hist_vol', hist_vol)
             std_hv_step = (hist_vol[-245:].std() * 2) / 10
@@ -490,8 +466,8 @@ def price_vol_matrix_covered(df, dte):
                 underlying_up = underlying_up + underlying_step
                 sigma_list.append(start_up)
                 underlying_list.append(underlying_up)
-                sigma_name.append(round((underlying_step/max_under_std * i+1 - 1)*2 + 0.2, 2))
-                underlying_name.append(round((underlying_step/max_under_std * i+1 - 1)*2 + 0.2, 2))
+                sigma_name.append(round((underlying_step / max_under_std * i + 1 - 1) * 2 + 0.2, 2))
+                underlying_name.append(round((underlying_step / max_under_std * i + 1 - 1) * 2 + 0.2, 2))
 
             sigma_list.append(mean_sigma / 100)
             sigma_list = sorted(sigma_list, reverse=True)
@@ -499,16 +475,13 @@ def price_vol_matrix_covered(df, dte):
             underlying_list.append(mean_underlying)
             underlying_name.append(0)
 
-            print('underlying_list')
-            print(underlying_list)
-
             for i in range(10):
                 start_down = start_down - std_hv_step
                 underlying_down = underlying_down - underlying_step
                 sigma_list.append(start_down)
                 underlying_list.append(underlying_down)
-                sigma_name.append(-round((underlying_step/max_under_std * i+1 - 1)*2 + 0.2, 2))
-                underlying_name.append(-round((underlying_step/max_under_std * i+1 - 1)*2 + 0.2, 2))
+                sigma_name.append(-round((underlying_step / max_under_std * i + 1 - 1) * 2 + 0.2, 2))
+                underlying_name.append(-round((underlying_step / max_under_std * i + 1 - 1) * 2 + 0.2, 2))
 
             loop_df = pd.DataFrame({
                 'IV': sigma_list,
@@ -523,7 +496,7 @@ def price_vol_matrix_covered(df, dte):
                 black_df = pd.DataFrame()
                 black_df['sigma'] = loop_df['IV']
                 black_df['strike'] = row['strike']
-                black_df['dte'] = (dte + position_dte - min_dte) * 1/365
+                black_df['dte'] = (dte + position_dte - min_dte) * 1 / 365
                 black_df['rate'] = row['rate'] / 100
                 black_df['stock_price'] = stock_price
 
@@ -535,14 +508,14 @@ def price_vol_matrix_covered(df, dte):
                     option_prices = black_df['stock_price']
 
                 if side != 'STOCK':
-                    if row['Count'] < 0:
+                    if row['count'] < 0:
                         return_matrix = row['prime'] - option_prices
-                    if row['Count'] > 0:
+                    if row['count'] > 0:
                         return_matrix = option_prices - row['prime']
                 else:
-                    if row['Count'] < 0:
+                    if row['count'] < 0:
                         return_matrix = row['underlying'] - option_prices
-                    if row['Count'] > 0:
+                    if row['count'] > 0:
                         return_matrix = option_prices - row['underlying']
                 return_matrix = return_matrix.to_frame(f'{round(stock_price, 4)}')
 
@@ -550,7 +523,7 @@ def price_vol_matrix_covered(df, dte):
 
             matrix['IV'] = loop_df['IV']
             # matrix = matrix.sort_values('IV')
-            matrix = matrix.set_index('IV') * row['multiplier'] * np.abs(row['Count'])
+            matrix = matrix.set_index('IV') * row['multiplier'] * np.abs(row['count'])
 
             full_matrix = pd.concat([matrix, full_matrix], axis=0)
 
@@ -562,19 +535,19 @@ def price_vol_matrix_covered(df, dte):
 
     else:
         prices_list = []
-        for num, row in df.iterrows():
+        for num, row in input_df.iterrows():
             current_price = row['underlying']
-            position_dte = row['Days to EXP']
+            position_dte = row['days_to_exp']
             row['rate'] = row['rate'] / 100
-            side = row['Type']
-            yahoo_stock = yf.download(row['Symb'])
+            side = row['side']
+            yahoo_stock = yf.download(row['symbol'])
             hist_vol = volatility_calc(yahoo_stock['Close'], 245)
             # print('hist_vol', hist_vol)
 
             # underlying_list = np.arange(current_price-(spread/2), current_price+spread, spread/0)
-            underlying_list = foo(current_price-(spread*2), current_price+(spread*2), 10)
+            underlying_list = foo(current_price - (spread * 2), current_price + (spread * 2), 10)
             # underlying_name = np.arange(-(spread/2), spread, spread/10)
-            underlying_name = foo(-(spread*2), (spread*2), 10)
+            underlying_name = foo(-(spread * 2), (spread * 2), 10)
             prices_list.append(underlying_list)
             print('underlying_list', underlying_list)
             print('underlying_name', underlying_name)
@@ -638,14 +611,14 @@ def price_vol_matrix_covered(df, dte):
                     option_prices = black_df['stock_price']
 
                 if side != 'STOCK':
-                    if row['Count'] < 0:
+                    if row['count'] < 0:
                         return_matrix = row['prime'] - option_prices
-                    if row['Count'] > 0:
+                    if row['count'] > 0:
                         return_matrix = option_prices - row['prime']
                 else:
-                    if row['Count'] < 0:
+                    if row['count'] < 0:
                         return_matrix = row['underlying'] - option_prices
-                    if row['Count'] > 0:
+                    if row['count'] > 0:
                         return_matrix = option_prices - row['underlying']
 
                 return_matrix = return_matrix.to_frame()
@@ -656,10 +629,9 @@ def price_vol_matrix_covered(df, dte):
             matrix['IV'] = loop_df['IV']
 
             # matrix = matrix.sort_values('IV')
-            matrix = matrix.set_index('IV') * row['multiplier'] * np.abs(row['Count'])
+            matrix = matrix.set_index('IV') * row['multiplier'] * np.abs(row['count'])
 
             full_matrix = pd.concat([matrix, full_matrix], axis=0)
-
 
 
     full_matrix = full_matrix.groupby('IV').sum()

@@ -4,7 +4,7 @@ import pandas as pd
 import glob
 from .Support import *
 import datetime
-from .matrix  import price_vol_matrix
+from .matrix  import price_vol_matrix, price_vol_matrix_covered
 
 def f_dia():
 
@@ -44,30 +44,27 @@ def f_dia():
                 iv_long = st.number_input('IV LONG', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
             with col12:
                 ticker = st.text_input('Ticker', '')
-                try:
-                    start_b_a_price_yahoo = yf.download(ticker)['Close'].iloc[-1]
-                except:
-                    start_b_a_price_yahoo = 0.
-                start_date_o_p = st.date_input('Start date', datetime.datetime.now())
-                start_b_a_price_short = st.number_input('Start BA Price SHORT', step=0.1, format="%.2f", min_value=0., max_value=50000., value=0.)
-                start_b_a_price_long = st.number_input('Start BA Price LONG', step=0.1, format="%.2f", min_value=0.,
+
+                start_date = st.date_input('Start date', datetime.datetime.now())
+                underlying_short = st.number_input('Start BA Price SHORT', step=0.1, format="%.2f", min_value=0., max_value=50000., value=0.)
+                underlying_long = st.number_input('Start BA Price LONG', step=0.1, format="%.2f", min_value=0.,
                                               max_value=50000., value=0.)
-                margin_o_p = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=6000.)
+                margin = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=6000.)
 
             with col13:
-                prime_short_o_p = st.number_input('Start Prime SHORT', step=0.01, format="%.2f", min_value=0., max_value=5000.)
-                prime_long_o_p = st.number_input('Start Prime LONG', step=0.01, format="%.2f", min_value=0., max_value=5000.)
-                strike_short_o_p = st.number_input('Strike SHORT', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
-                strike_long_o_p = st.number_input('Strike LONG', step=0.5, format="%.1f", min_value=1., max_value=5000.,
+                prime_short = st.number_input('Start Prime SHORT', step=0.01, format="%.2f", min_value=0., max_value=5000.)
+                prime_long = st.number_input('Start Prime LONG', step=0.01, format="%.2f", min_value=0., max_value=5000.)
+                strike_short = st.number_input('Strike SHORT', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
+                strike_long = st.number_input('Strike LONG', step=0.5, format="%.1f", min_value=1., max_value=5000.,
                                                    value=100.)
                 percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
 
             with col14:
-                num_pos_short_o_p = st.number_input('Positions SHORT', min_value=-100, max_value=365, value=-1)
-                num_pos_long_o_p = st.number_input('Positions LONG', min_value=-100, max_value=365, value=1)
-                multiplicator_o_p = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
-                size_o_p = st.number_input('Size', min_value=1, max_value=100000, value=100)
-                commission_o_p = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
+                count_short = st.number_input('Positions SHORT', min_value=-100, max_value=365, value=-1)
+                count_long = st.number_input('Positions LONG', min_value=-100, max_value=365, value=1)
+                multiplier = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
+                size = st.number_input('Size', min_value=1, max_value=100000, value=100)
+                commission = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
 
         submit_button = st.form_submit_button('Commit')
         col31, col32 = st.columns(2)
@@ -75,44 +72,61 @@ def f_dia():
         # with col31:
         #     # ============================================
         #     if st.button("Commit", type="primary"):
+
         try:
             del st.session_state[f'position_data']
         except:
             pass
-        input_new_df = pd.DataFrame({
-            'Position_type': ['F. Diagonal'],
-            'Position_side': [dia_type],
-            'Symbol': [ticker],
-            'Symbol Bento': [ticker],
-            'Start_date': [start_date_o_p],
-            'Exp_date_short': [end_date_stat_short],
-            'Exp_date_long': [end_date_stat_long],
-            'Rate': [risk_rate],
 
-            'IV_SHORT': [iv_short],
-            'IV_LONG': [iv_long],
-            'Percentage_Array': [percentage_array],
-
-            'Strike_short': [strike_short_o_p],
-            'Strike_long': [strike_long_o_p],
-            'Number_pos_short': [num_pos_short_o_p],
-            'Number_pos_long': [num_pos_long_o_p],
-
-            'Prime_short': [prime_short_o_p],
-            'Prime_long': [prime_long_o_p],
-
-            'Commission': [commission_o_p],
-            'Margin': [margin_o_p],
-
-            'Start_underlying_short': [start_b_a_price_short],
-            'Start_underlying_long': [start_b_a_price_long],
-            'IV_short': [iv_short],
-            'IV_long': [iv_long],
-
-            'Multiplicator': [multiplicator_o_p],
-            'Size': [size_o_p],
+        days_to_expiration_short = (end_date_stat_short - datetime.datetime.now().date()).days
+        days_to_expiration_long = (end_date_stat_long - datetime.datetime.now().date()).days
+        print('days_to_expiration_short', days_to_expiration_short)
+        print('days_to_expiration_long', days_to_expiration_long)
+        # ---- OPTION ---
+        df_short = pd.DataFrame({
+            'position_type': ['F. Diagonal'],
+            'symbol': [ticker],
+            'symbol_bento': [ticker],
+            'side': [dia_type],
+            'strike': [strike_short],
+            'days_to_exp': [days_to_expiration_short],
+            'exp_date': [end_date_stat_short],
+            'count': [count_short],
+            'underlying': [underlying_short],
+            'rate': [risk_rate],
+            # 'closing_days_array': [percentage_array],
+            'prime': [prime_short],
+            'iv': [iv_short],
+            'percentage_array': [percentage_array],
+            'multiplier': [multiplier],
+            'commission': [commission],
+            'start_date': [start_date],
+            'margin': [margin],
         })
 
+        # ---- FUTURES ---
+        df_long = pd.DataFrame({
+            'position_type': ['F. Diagonal'],
+            'symbol': [ticker],
+            'symbol_bento': [ticker],
+            'side': [dia_type],
+            'strike': [strike_long],
+            'days_to_exp': [days_to_expiration_long],
+            'exp_date': [end_date_stat_long],
+            'count': [count_long],
+            'underlying': [underlying_long],
+            'rate': [risk_rate],
+            # 'closing_days_array': [percentage_array],
+            'prime': [prime_long],
+            'iv': [iv_long],
+            'percentage_array': [percentage_array],
+            'multiplier': [multiplier],
+            'commission': [commission],
+            'start_date': [start_date],
+            'margin': [margin],
+        })
+
+        input_new_df = pd.concat([df_short, df_long]).reset_index(drop=True)
 
         if f'position_data' not in st.session_state:
             st.session_state[f'position_data'] = input_new_df
@@ -133,17 +147,14 @@ def f_dia():
     # try:
     if infoType_plot_matrix:
         emulate_df = st.session_state[f'position_data'].copy()
-        emulate_df['DTE_short'] = (emulate_df['Exp_date_short'] - emulate_df['Start_date']).values[0].days
-        emulate_df['DTE_long'] = (emulate_df['Exp_date_long'] - emulate_df['Start_date']).values[0].days
 
         position_emulate = emulate_position(emulate_df, path, path_bento, risk_rate)
         # if f'position_emulate' not in st.session_state:
         #     st.session_state[f'position_emulate'] = position_emulate
 
-        print('dteeeeeeeeeeeeee', emulate_df['DTE_short'])
-        dte = st.slider("Select DTE", 1, emulate_df['DTE_short'].values[0], value=emulate_df['DTE_short'].values[0])
+        dte = st.slider("Select DTE", 1, days_to_expiration_short, value=days_to_expiration_short)
         print('dteeeeeeeeeeeeee', dte)
-        fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix(emulate_df, dte)
+        fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(emulate_df, dte)
 
         st.dataframe(position_emulate, hide_index=True, column_config=None)
         st.text(f'Weighted Profit: {weighted_profit_mtrx}')
@@ -181,7 +192,7 @@ def f_dia():
             iv_short_cur = st.number_input('Cur IV SHORT', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
             iv_long_cur = st.number_input('Cur IV LONG', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
         with col24:
-            b_a_price_short_cur = st.number_input('Cur BA Price SHORT', step=0.1, format="%.2f", min_value=0., max_value=50000., value=start_b_a_price_yahoo)
+            b_a_price_short_cur = st.number_input('Cur BA Price SHORT', step=0.1, format="%.2f", min_value=0., max_value=50000., value=0.)
             b_a_price_long_cur = st.number_input('Cur BA Price LONG', step=0.1, format="%.2f", min_value=0.,
                                           max_value=50000., value=0.)
 
@@ -190,22 +201,29 @@ def f_dia():
 
         pos_type = 'F. Diagonal'
 
+
     if update_btn:
         print('update_btn')
-        input_update_df = pd.DataFrame({
-            'Position_type': ['F. Diagonal'],
-            'IV_SHORT_Current': [iv_short_cur],
-            'IV_LONG_Current': [iv_long_cur],
-            'Prime_short_Current': [prime_short_cur],
-            'Prime_long_Current': [prime_long_cur],
-            'underlying_short_Current': [b_a_price_short_cur],
-            'underlying_long_Current': [b_a_price_long_cur],
+        df_short_update = pd.DataFrame({
+            'position_type': ['F. Diagonal'],
+            'iv_current': [iv_short_cur],
+            'prime_current': [prime_short_cur],
+            'underlying_current': [b_a_price_short_cur],
         })
 
-        update_postion_dia(dia_type, pos_type, risk_rate, path_bento, input_update_df)
+        # ---- FUTURES ---
+        df_long_update = pd.DataFrame({
+            'position_type': ['F. Diagonal'],
+            'iv_current': [iv_long_cur],
+            'prime_current': [prime_long_cur],
+            'underlying_current': [b_a_price_long_cur],
+        })
+
+        input_update_df = pd.concat([df_short_update, df_long_update]).reset_index(drop=True)
+
+        update_postion_cover(dia_type, pos_type, risk_rate, path_bento, input_update_df)
 
         st.success('Position Updated!')
-
 
     st.header("OPENED POSITIONS")
     # with st.form(key='show_position'):
@@ -231,13 +249,14 @@ def f_dia():
             position_df, greeks_df, pl, marg = return_postion(csv_position_df, pos_type, risk_rate)  # greeks_df,
             # with st.expander(tick + (' .' * 5) + 'PL: ' + str(pl) + (' .' * 5) + 'Margin: ' + str(marg) + (
             #         ' .' * 5) + 'POP lognormal: ' + str(pop_log)):
+
             infoType_plot_matrix = st.checkbox(tick + (' .' * 5) + 'PL: ' + str(pl) + (' .' * 5) + 'Margin: ' + str(marg) + (
                     ' .' * 5) )
             if infoType_plot_matrix:
                 with st.container():
                     print('position_df', position_df)
-                    dte = st.slider("DTE", 1, full_postion_df['DTE_short'].values[0], value=full_postion_df['DTE_short'].values[0])
-                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix(csv_position_df, dte)
+                    dte = st.slider("Select DTE", 1, days_to_expiration_short, value=days_to_expiration_short)
+                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(csv_position_df, dte)
 
                     st.text(tick)
                     st.dataframe(position_df, hide_index=True, column_config=None)

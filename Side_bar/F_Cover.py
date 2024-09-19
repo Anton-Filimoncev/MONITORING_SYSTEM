@@ -32,40 +32,37 @@ def f_cover():
         with st.expander('Add New F. Covered Position'):
             col11, col12, col13, col14 = st.columns(4)
             with col11:
-                dia_type = st.selectbox(
+                option_type = st.selectbox(
                     "TYPE",
                     ("PUT", "CALL"),
                     index=None,
                     placeholder="Select TYPE...",
                 )
 
-                end_date_stat = st.date_input('EXP')
+                exp_date = st.date_input('EXP')
                 iv = st.number_input('IV', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
-                margin_o_p = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=6000.)
+                margin = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=6000.)
             with col12:
                 ticker = st.text_input('Ticker', '')
-                try:
-                    start_b_a_price_yahoo = yf.download(ticker)['Close'].iloc[-1]
-                except:
-                    start_b_a_price_yahoo = 0.
-                start_date_o_p = st.date_input('Start date', datetime.datetime.now())
-                start_b_a_price= st.number_input('Start BA Price', step=0.1, format="%.2f", min_value=0., max_value=50000., value=0.)
-                start_b_a_price_stock = st.number_input('STOCK PRICE', step=0.1, format="%.2f", min_value=0.,
+                start_date = st.date_input('Start date', datetime.datetime.now())
+                underlying_option = st.number_input('Option Underlying', step=0.1, format="%.2f", min_value=0., max_value=50000., value=0.)
+                underlying_futures = st.number_input('Futures Price', step=0.1, format="%.2f", min_value=0.,
                                               max_value=50000., value=0.)
 
             with col13:
-                prime_o_p = st.number_input('Start Prime', step=0.01, format="%.2f", min_value=0., max_value=5000.)
-                strike_o_p = st.number_input('Strike', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
+                prime = st.number_input('Start Prime', step=0.01, format="%.2f", min_value=0., max_value=5000.)
+                strike = st.number_input('Strike', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
                 percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
-                commission_o_p = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
+                commission = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
             with col14:
-                num_pos_short_o_p = st.number_input('Positions OPT', min_value=-100, max_value=365, value=-1)
-                num_pos_long_o_p = st.number_input('Positions STOCK', min_value=-100, max_value=365, value=1)
-                multiplicator_o_p = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
+                count = st.number_input('Count Option', min_value=-100, max_value=365, value=-1)
+                count_futures = st.number_input('Count Futures', min_value=-100, max_value=365, value=1)
+                multiplier = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
+
 
 
         submit_button = st.form_submit_button('Commit')
-        col31, col32 = st.columns(2)
+        # col31, col32 = st.columns(2)
 
         # with col31:
         #     # ============================================
@@ -74,26 +71,54 @@ def f_cover():
             del st.session_state[f'position_data']
         except:
             pass
-        input_new_df = pd.DataFrame({
-            'Position_type': ['F. Covered'],
-            'Position_side': [dia_type],
-            'Symbol': [ticker],
-            'Symbol Bento': [ticker],
-            'Start_date': [start_date_o_p],
-            'Exp_date': [end_date_stat],
-            'Rate': [risk_rate],
-            'IV': [iv],
-            'Percentage_Array': [percentage_array],
-            'Strike': [strike_o_p],
-            'Number_pos': [num_pos_short_o_p],
-            'Prime': [prime_o_p],
-            'Commission': [commission_o_p],
-            'Margin': [margin_o_p],
-            'Underlying': [start_b_a_price],
-            'Underlying_stock': [start_b_a_price_stock],
-            'Multiplicator': [multiplicator_o_p],
+
+        days_to_expiration = (exp_date - datetime.datetime.now().date()).days
+        print('days_to_expiration', days_to_expiration)
+        # ---- OPTION ---
+        df_opt = pd.DataFrame({
+            'position_type': ['F. Covered'],
+            'symbol': [ticker],
+            'symbol_bento': [ticker],
+            'side': [option_type],
+            'strike': [strike],
+            'days_to_exp': [days_to_expiration],
+            'exp_date': [exp_date],
+            'count': [count],
+            'underlying': [underlying_option],
+            'rate': [risk_rate],
+            # 'closing_days_array': [percentage_array],
+            'prime': [prime],
+            'iv': [iv],
+            'percentage_array': [percentage_array],
+            'multiplier': [multiplier],
+            'commission': [commission],
+            'start_date': [start_date],
+            'margin': [margin],
         })
 
+        # ---- FUTURES ---
+        df_fut = pd.DataFrame({
+            'position_type': ['F. Covered'],
+            'symbol': [ticker],
+            'symbol_bento': [ticker],
+            'side': ['STOCK'],
+            'strike': [strike],
+            'days_to_exp': [days_to_expiration],
+            'exp_date': [exp_date],
+            'count': [count_futures],
+            'underlying': [underlying_futures],
+            'rate': [risk_rate],
+            # 'closing_days_array': [percentage_array],
+            'prime': [prime],
+            'iv': [iv],
+            'percentage_array': [percentage_array],
+            'multiplier': [multiplier],
+            'commission': [commission],
+            'start_date': [start_date],
+            'margin': [margin],
+        })
+
+        input_new_df = pd.concat([df_opt, df_fut]).reset_index(drop=True)
 
         if f'position_data' not in st.session_state:
             st.session_state[f'position_data'] = input_new_df
@@ -102,6 +127,7 @@ def f_cover():
         print(st.session_state[f'position_data'])
         if submit_button:
             st.success('Success commit!')
+            print(st.session_state[f'position_data'])
 
     # st.button("Open", type="primary")
 
@@ -117,15 +143,12 @@ def f_cover():
 
 
         position_emulate = emulate_position(emulate_df, path, path_bento, risk_rate)
-        # if f'position_emulate' not in st.session_state:
-        #     st.session_state[f'position_emulate'] = position_emulate
 
-        print('dteeeeeeeeeeeeee', emulate_df['DTE'])
-        dte = st.slider("Select DTE", 1, emulate_df['DTE'].values[0], value=emulate_df['DTE'].values[0])
-        print('dteeeeeeeeeeeeee', dte)
+        dte = st.slider("Select DTE", 1, emulate_df['days_to_exp'].values[0], value=emulate_df['days_to_exp'].values[0])
+
         fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(emulate_df, dte)
 
-        st.dataframe(position_emulate, hide_index=True, column_config=None)
+        st.dataframe(position_emulate[0:1], hide_index=True, column_config=None)
         st.text(f'Weighted Profit: {weighted_profit_mtrx}')
         st.text(f'Weighted Loss: {weighted_loss_mtrx}')
         st.text(f'Weighted R/R: {weighted_rr_mtrx}')
@@ -141,7 +164,7 @@ def f_cover():
         # show all open position
         print(filenames)
 
-    with st.expander('F. Dia Position '):
+    with st.expander('F. Covered Position '):
         col21, col22, col23, col24 = st.columns(4)
         with col21:
             dia_type = st.selectbox(
@@ -158,24 +181,34 @@ def f_cover():
         with col23:
             iv_cur = st.number_input('Cur IV', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
         with col24:
-            b_a_price_cur = st.number_input('Cur BA Price', step=0.1, format="%.2f", min_value=0., max_value=50000., value=start_b_a_price_yahoo)
-            b_a_price_stock_cur = st.number_input('Cur STOCK Price', step=0.1, format="%.2f", min_value=0.,
+            underlying_option_cur = st.number_input('Option Underlying', step=0.1, format="%.2f", min_value=0., max_value=50000., value=0.)
+            underlying_futures_cur = st.number_input('Futures Price', step=0.1, format="%.2f", min_value=0.,
                                           max_value=50000., value=0.)
 
 
         update_btn = st.button("Update Position", type="primary")
 
-        pos_type = 'F. Diagonal'
+        pos_type = 'F. Covered'
 
     if update_btn:
         print('update_btn')
-        input_update_df = pd.DataFrame({
-            'Position_type': ['F. Covered'],
-            'IV_Current': [iv_cur],
-            'Prime_Current': [prime_cur],
-            'Underlying_Current': [b_a_price_cur],
-            'Underlying_stock_Current': [b_a_price_stock_cur],
+        df_opt_update = pd.DataFrame({
+            'position_type': ['F. Covered'],
+            'iv_current': [iv_cur],
+            'prime_current': [prime_cur],
+            'underlying_current': [underlying_option_cur],
         })
+
+        # ---- FUTURES ---
+        df_fut_update = pd.DataFrame({
+            'position_type': ['F. Covered'],
+            'iv_current': [iv_cur],
+            'prime_current': [prime_cur],
+            'underlying_current': [underlying_futures_cur],
+        })
+
+
+        input_update_df = pd.concat([df_opt_update, df_fut_update]).reset_index(drop=True)
 
         update_postion_cover(dia_type, pos_type, risk_rate, path_bento, input_update_df)
 
@@ -196,7 +229,7 @@ def f_cover():
             print('csv_position_df', csv_position_df)
             tick = get_tick_from_csv_name(csv_position_df)
             print('tick', tick)
-            pos_type = 'F. Diagonal'
+            pos_type = 'F. Covered'
 
                 # st.success('All data is updated!')
             # else:
@@ -211,7 +244,7 @@ def f_cover():
             if infoType_plot_matrix:
                 with st.container():
                     print('position_df', position_df)
-                    dte = st.slider("DTE", 1, full_postion_df['DTE'].values[0], value=full_postion_df['DTE'].values[0])
+                    dte = st.slider("DTE", 1, full_postion_df['days_to_exp'].values[0], value=full_postion_df['days_to_exp'].values[0])
                     fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(csv_position_df, dte)
 
                     st.text(tick)
