@@ -4,15 +4,14 @@ import pandas as pd
 import glob
 from .Support import *
 import datetime
-from .matrix import price_vol_matrix, price_vol_matrix_covered
-from .SELECTION.MARKET_DATA import *
-from .SELECTION.strang_select import *
+from .matrix  import price_vol_matrix, price_vol_matrix_covered
+from .SELECTION.Support_Selection import *
 from .databentos.get_databento import get_bento_data
+from .SELECTION.MARKET_DATA import *
 
+def f_put_call():
 
-def f_strangle():
-
-    path = 'Side_bar/side_bar_data/futures/strangle/'
+    path = 'Side_bar/side_bar_data/futures/put_call/'
     path_bento = 'Side_bar/databentos/req/'
     filenames = glob.glob(path + "*.csv")
 
@@ -20,7 +19,7 @@ def f_strangle():
 
         col1, col2, col3 = st.columns([6, 1, 1])
         with col1:
-            st.header('FUTURES STRANGLE')
+            st.header('FUTURES Put/Call')
         with col2:
             risk_rate = st.number_input('Risk Rate', step=0.5, format="%.1f", min_value=1., max_value=5000., value=4.8)
 
@@ -32,43 +31,38 @@ def f_strangle():
         # ============================================
         # ============================================     add new position
         # ============================================
-        with st.expander('Add New F. Strangle Position'):
+        with st.expander('Add New F. Put/Call'):
             col11, col12, col13, col14 = st.columns(4)
             with col11:
-                percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
+                dia_type = st.selectbox(
+                    "TYPE",
+                    ("PUT", "CALL"),
+                    index=None,
+                    placeholder="Select TYPE...",
+                )
                 exp_date = st.date_input('EXP date')
-                iv_call = st.number_input('IV CALL', step=0.01, format="%.2f", min_value=0., max_value=5000.,
-                                           value=0.0)
-                iv_put = st.number_input('IV PUT', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
-
+                iv = st.number_input('IV LONG', step=0.01, format="%.2f", min_value=0., max_value=5000., value=0.0)
             with col12:
                 ticker = st.text_input('Ticker', '')
-                try:
-                    start_b_a_price_yahoo = yf.download(ticker)['Close'].iloc[-1]
-                except:
-                    start_b_a_price_yahoo = 0.
                 start_date = st.date_input('Start date', datetime.datetime.now())
-                underlying = st.number_input('Start BA Price', step=0.1, format="%.2f", min_value=0.,
-                                                        max_value=50000., value=0.)
-                margin = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000.,
-                                             value=6000.)
+                underlying = st.number_input('Start BA Price', step=0.1, format="%.2f", min_value=0., max_value=50000.,
+                                             value=0.)
+                margin = st.number_input('Margin', step=0.5, format="%.1f", min_value=0., max_value=55000., value=6000.)
 
             with col13:
-                prime_call = st.number_input('Start Prime CALL', step=0.01, format="%.2f", min_value=0.,
-                                                  max_value=5000.)
-                prime_put = st.number_input('Start Prime PUT', step=0.01, format="%.2f", min_value=0.,
-                                                 max_value=5000.)
-                strike_call = st.number_input('Strike CALL', step=0.5, format="%.1f", min_value=0.,
-                                                   max_value=500000., value=0.)
-                strike_put = st.number_input('Strike PUT', step=0.5, format="%.1f", min_value=0., max_value=500000.,
-                                                  value=0.)
+                prime = st.number_input('Start Prime LONG', step=0.01, format="%.2f", min_value=0.,
+                                             max_value=5000.)
+                strike = st.number_input('Strike LONG', step=0.5, format="%.1f", min_value=0., max_value=500000.,
+                                              value=0.)
+                percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
 
 
             with col14:
-                count = st.number_input('Positions', min_value=-100, max_value=365, value=1)
+                count = st.number_input('Positions LONG', min_value=-100, max_value=365, value=1)
                 multiplier = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
+                size = st.number_input('Size', min_value=1, max_value=100000, value=100)
                 commission = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000.,
-                                                 value=3.4)
+                                             value=3.4)
 
         submit_button = st.form_submit_button('Commit')
         col31, col32 = st.columns(2)
@@ -82,51 +76,28 @@ def f_strangle():
             pass
         days_to_expiration = (exp_date - datetime.datetime.now().date()).days
         print('days_to_expiration', days_to_expiration)
-        # ---- OPTION ---
-        df_put = pd.DataFrame({
-            'position_type': ['F. Strangle'],
+
+        # ----  ---
+        input_new_df = pd.DataFrame({
+            'position_type': ['F. Put/Call'],
             'symbol': [ticker],
             'symbol_bento': [ticker],
-            'side': ['PUT'],
-            'strike': [strike_put],
+            'side': [dia_type],
+            'strike': [strike],
             'days_to_exp': [days_to_expiration],
             'exp_date': [exp_date],
             'count': [count],
             'underlying': [underlying],
             'rate': [risk_rate],
             # 'closing_days_array': [percentage_array],
-            'prime': [prime_put],
-            'iv': [iv_put],
+            'prime': [prime],
+            'iv': [iv],
             'percentage_array': [percentage_array],
             'multiplier': [multiplier],
             'commission': [commission],
             'start_date': [start_date],
             'margin': [margin],
         })
-
-        # ---- FUTURES ---
-        df_call = pd.DataFrame({
-            'position_type': ['F. Strangle'],
-            'symbol': [ticker],
-            'symbol_bento': [ticker],
-            'side': ['CALL'],
-            'strike': [strike_call],
-            'days_to_exp': [days_to_expiration],
-            'exp_date': [exp_date],
-            'count': [count],
-            'underlying': [underlying],
-            'rate': [risk_rate],
-            # 'closing_days_array': [percentage_array],
-            'prime': [prime_call],
-            'iv': [iv_call],
-            'percentage_array': [percentage_array],
-            'multiplier': [multiplier],
-            'commission': [commission],
-            'start_date': [start_date],
-            'margin': [margin],
-        })
-
-        input_new_df = pd.concat([df_put, df_call]).reset_index(drop=True)
 
         if f'position_data' not in st.session_state:
             st.session_state[f'position_data'] = input_new_df
@@ -166,7 +137,7 @@ def f_strangle():
 
         print(filenames)
 
-    with st.expander('F. Strangle Position '):
+    with st.expander('F. Put/Call Position '):
         col21, col22, col23, col24 = st.columns(4)
         with col21:
             dia_type = st.selectbox(
@@ -178,18 +149,14 @@ def f_strangle():
             )
 
         with col22:
-            prime_put_cur = st.number_input('Cur Prime Put', step=0.01, format="%.2f", min_value=0.,
+            prime_cur = st.number_input('Cur Prime', step=0.01, format="%.2f", min_value=0.,
                                               max_value=5000.)
-            prime_call_cur = st.number_input('Cur Prime Call', step=0.01, format="%.2f", min_value=0.,
-                                             max_value=5000.)
         with col23:
-            iv_put_cur = st.number_input('Cur IV Put', step=0.01, format="%.2f", min_value=0., max_value=5000.,
+            iv_cur = st.number_input('Cur IV', step=0.01, format="%.2f", min_value=0., max_value=5000.,
                                            value=0.0)
-            iv_call_cur = st.number_input('Cur IV Call', step=0.01, format="%.2f", min_value=0., max_value=5000.,
-                                          value=0.0)
         with col24:
             underlying_cur = st.number_input('Cur BA Price', step=0.1, format="%.2f", min_value=0.,
-                                                  max_value=50000., value=start_b_a_price_yahoo)
+                                                  max_value=50000., value=0.)
 
         update_btn = st.button("Update Position", type="primary")
 
@@ -198,22 +165,13 @@ def f_strangle():
 
     if update_btn:
         print('update_btn')
-        df_put_update = pd.DataFrame({
+        input_update_df = pd.DataFrame({
             'position_type': ['F. Strangle'],
-            'iv_current': [iv_put_cur],
-            'prime_current': [prime_put_cur],
+            'iv_current': [iv_cur],
+            'prime_current': [prime_cur],
             'underlying_current': [underlying_cur],
         })
 
-        # ---- FUTURES ---
-        df_call_update = pd.DataFrame({
-            'position_type': ['F. Strangle'],
-            'iv_current': [iv_call_cur],
-            'prime_current': [prime_call_cur],
-            'underlying_current': [underlying_cur],
-        })
-
-        input_update_df = pd.concat([df_put_update, df_call_update]).reset_index(drop=True)
 
         update_postion_cover(dia_type, pos_type, risk_rate, path_bento, input_update_df)
 

@@ -54,9 +54,9 @@ def f_dia():
             with col13:
                 prime_short = st.number_input('Start Prime SHORT', step=0.01, format="%.2f", min_value=0., max_value=5000.)
                 prime_long = st.number_input('Start Prime LONG', step=0.01, format="%.2f", min_value=0., max_value=5000.)
-                strike_short = st.number_input('Strike SHORT', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
-                strike_long = st.number_input('Strike LONG', step=0.5, format="%.1f", min_value=1., max_value=5000.,
-                                                   value=100.)
+                strike_short = st.number_input('Strike SHORT', step=0.5, format="%.1f", min_value=0., max_value=500000., value=1.)
+                strike_long = st.number_input('Strike LONG', step=0.5, format="%.1f", min_value=0., max_value=500000.,
+                                                   value=0.)
                 percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
 
             with col14:
@@ -255,12 +255,13 @@ def f_dia():
             if infoType_plot_matrix:
                 with st.container():
                     print('position_df', position_df)
-                    dte = st.slider("Select DTE", 1, days_to_expiration_short, value=days_to_expiration_short)
-                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(csv_position_df, dte)
-
                     st.text(tick)
                     st.dataframe(position_df, hide_index=True, column_config=None)
                     st.dataframe(greeks_df, hide_index=True, column_config=None)
+
+                    dte = st.slider("Select DTE", 1, full_postion_df['days_to_exp'].values[0], value=full_postion_df['days_to_exp'].values[0])
+                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(csv_position_df, dte)
+
                     st.text(f'Weighted Profit: {weighted_profit_mtrx}')
                     st.text(f'Weighted Loss: {weighted_loss_mtrx}')
                     st.text(f'Weighted R/R: {weighted_rr_mtrx}')

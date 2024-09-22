@@ -5,6 +5,9 @@ import glob
 from .Support import *
 import datetime
 from .matrix  import price_vol_matrix, price_vol_matrix_covered
+from .SELECTION.Support_Selection import *
+from .databentos.get_databento import get_bento_data
+from .SELECTION.MARKET_DATA import *
 
 def f_ratio_112():
 
@@ -52,16 +55,16 @@ def f_ratio_112():
                 prime_long = st.number_input('Start Prime LONG', step=0.01, format="%.2f", min_value=0., max_value=5000.)
                 prime_short_1 = st.number_input('Start Prime SHORT 1', step=0.01, format="%.2f", min_value=0., max_value=5000.)
                 prime_short_2 = st.number_input('Start Prime SHORT 2', step=0.01, format="%.2f", min_value=0., max_value=5000.)
-                strike_long = st.number_input('Strike LONG', step=0.5, format="%.1f", min_value=1., max_value=5000.,
-                                                   value=100.)
-                strike_short_1 = st.number_input('Strike SHORT 1', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
-                strike_short_2 = st.number_input('Strike SHORT 2', step=0.5, format="%.1f", min_value=1., max_value=5000.,
-                                                   value=100.)
+                strike_long = st.number_input('Strike LONG', step=0.5, format="%.1f", min_value=0., max_value=500000.,
+                                                   value=0.)
+                strike_short_1 = st.number_input('Strike SHORT 1', step=0.5, format="%.1f", min_value=0., max_value=500000., value=0.)
+                strike_short_2 = st.number_input('Strike SHORT 2', step=0.5, format="%.1f", min_value=0., max_value=500000.,
+                                                   value=0.)
 
             with col14:
                 count_long = st.number_input('Positions LONG', min_value=-100, max_value=365, value=1)
-                count_short_1 = st.number_input('Positions SHORT 1', min_value=-100, max_value=365, value=1)
-                count_short_2 = st.number_input('Positions SHORT 2', min_value=-100, max_value=365, value=2)
+                count_short_1 = st.number_input('Positions SHORT 1', min_value=-100, max_value=365, value=-1)
+                count_short_2 = st.number_input('Positions SHORT 2', min_value=-100, max_value=365, value=-2)
                 multiplier = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
                 size = st.number_input('Size', min_value=1, max_value=100000, value=100)
                 commission = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
@@ -198,7 +201,6 @@ def f_ratio_112():
             )
 
         with col22:
-
             prime_long_cur = st.number_input('Cur Prime LONG', step=0.01, format="%.2f", min_value=0.,
                                              max_value=5000.)
             prime_short_1_cur = st.number_input('Cur Prime SHORT 1', step=0.01, format="%.2f", min_value=0.,
@@ -281,12 +283,14 @@ def f_ratio_112():
             if infoType_plot_matrix:
                 with st.container():
                     print('position_df', position_df)
-                    dte = st.slider("DTE", 1, days_to_expiration, value=days_to_expiration)
-                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(csv_position_df, dte)
 
                     st.text(tick)
                     st.dataframe(position_df, hide_index=True, column_config=None)
                     st.dataframe(greeks_df, hide_index=True, column_config=None)
+
+                    dte = st.slider("DTE", 1, full_postion_df['days_to_exp'].values[0], value=full_postion_df['days_to_exp'].values[0])
+                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(csv_position_df, dte)
+
                     st.text(f'Weighted Profit: {weighted_profit_mtrx}')
                     st.text(f'Weighted Loss: {weighted_loss_mtrx}')
                     st.text(f'Weighted R/R: {weighted_rr_mtrx}')
@@ -298,3 +302,83 @@ def f_ratio_112():
                 # submit_button = st.form_submit_button(f'Commit_{num}' )
 
 
+    # ===========================================
+    # =====================================     SELECTION  ======================
+    # ===========================================
+
+    st.header('-'*10 + 'SELECTION' + '-'*10)
+    with st.container():
+        col91, col92, col93 = st.columns([1, 1, 1])
+        with col91:
+            ticker = st.text_input('Ticker', 'ES=F')
+            ticker_b = st.text_input('Ticker Bento', 'ES=F')
+        with col92:
+            nearest_dte = st.number_input('Days to EXP', step=1, min_value=0, max_value=50000, value=90)
+        with col93:
+            data_type = st.radio('Instrument Type', ["OPTIONS", "FUTURES"])
+
+        long_count = 1
+        short_1_count = 1
+        short_2_count = 2
+
+        if 'quotes' not in st.session_state:
+            st.session_state['quotes'] = np.nan
+
+        if 'needed_exp_date' not in st.session_state:
+            st.session_state['needed_exp_date'] = np.nan
+
+        path_bento = 'Side_bar/databentos/req/' # C:/Users/itmed/OneDrive/Desktop/invest/POP_STRAT_STREAM/
+
+        if data_type == "OPTIONS":
+            instr_type = 'OPT'
+            if st.button("GET MARKET DATA", type="primary"):
+                needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
+                quotes = hedginglab_get_quotes(ticker, nearest_dte)
+                quotes['iv'] = quotes['iv'] * 100
+                # st.text(dte)
+                st.text('Exp Date: ' + str(needed_exp_date.date()))
+                # st.dataframe(quotes)
+                st.session_state['quotes'] = quotes
+                st.session_state['needed_exp_date'] = needed_exp_date
+                st.success('Market Data Downloaded!')
+
+        if data_type == "FUTURES":
+            instr_type = 'FUT'
+            if st.button("GET BENTO DATA", type="primary"):
+                needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, dia_type, path_bento)
+                quotes['iv'] = quotes['iv'] * 100
+                # st.text(dte)
+                st.text('Exp Date: ' + str(needed_exp_date.date()))
+                # st.dataframe(quotes)
+                st.session_state['quotes'] = quotes
+                st.session_state['needed_exp_date'] = needed_exp_date
+                st.success('Market Data Downloaded!')
+
+        quotes = st.session_state['quotes']
+        needed_exp_date = st.session_state['needed_exp_date']
+
+        print(needed_exp_date)
+
+        # try:
+
+        try:
+            days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
+        except:
+            days_to_expiration = np.nan  # st.date_input('EXP date')
+
+        try:
+            closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
+                                                 value=int(days_to_expiration))
+        except:
+            closing_days_array = st.number_input('Closing Days Proba')
+
+        if st.button("Calculate", type="primary"):
+
+            da_ratio_112_data = get_ratio_112(ticker, risk_rate,  days_to_expiration,
+                                          closing_days_array, percentage_array, quotes,  long_count, short_1_count,
+                                          short_2_count, dia_type, instr_type)
+
+            st.text('Parameters:')
+            st.dataframe(da_ratio_112_data, hide_index=True, column_config=None)
+            # st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
+            # st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))

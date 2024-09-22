@@ -456,6 +456,7 @@ def price_vol_matrix_covered(df, dte):
             sigma_name = []
             underlying_list = []
             underlying_name = []
+
             start_up = mean_sigma / 100
             start_down = mean_sigma / 100
             underlying_up = mean_underlying
@@ -469,11 +470,13 @@ def price_vol_matrix_covered(df, dte):
                 sigma_name.append(round((underlying_step / max_under_std * i + 1 - 1) * 2 + 0.2, 2))
                 underlying_name.append(round((underlying_step / max_under_std * i + 1 - 1) * 2 + 0.2, 2))
 
+
             sigma_list.append(mean_sigma / 100)
             sigma_list = sorted(sigma_list, reverse=True)
             sigma_name.append(0)
             underlying_list.append(mean_underlying)
             underlying_name.append(0)
+
 
             for i in range(10):
                 start_down = start_down - std_hv_step
@@ -670,9 +673,20 @@ def price_vol_matrix_covered(df, dte):
         )
         )
     except:
+
+        temp_df = pd.DataFrame({
+            'Fist': underlying_list[::-1],
+            'Sec': underlying_name[::-1]
+        })
+
+        temp_df = temp_df.round(1).astype('str')
+        temp_df['X'] = temp_df['Fist'] + '_' + temp_df['Sec']
+
+        underlying_name = []
+        underlying_name_abs = []
         fig_map = go.Figure(data=go.Heatmap(
             z=full_matrix.round(2).values.tolist(),
-            x=full_matrix.columns.tolist(),
+            x=temp_df['X'] .values.tolist(),
             y=full_matrix.index.values.tolist(),
             hoverongaps=False,
             colorscale = pl_colorscale,

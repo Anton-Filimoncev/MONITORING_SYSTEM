@@ -51,7 +51,7 @@ def f_cover():
 
             with col13:
                 prime = st.number_input('Start Prime', step=0.01, format="%.2f", min_value=0., max_value=5000.)
-                strike = st.number_input('Strike', step=0.5, format="%.1f", min_value=1., max_value=5000., value=100.)
+                strike = st.number_input('Strike', step=0.5, format="%.1f", min_value=0., max_value=500000., value=0.)
                 percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
                 commission = st.number_input('Commission', step=0.1, format="%.1f", min_value=0., max_value=5000., value=3.4)
             with col14:
@@ -244,12 +244,13 @@ def f_cover():
             if infoType_plot_matrix:
                 with st.container():
                     print('position_df', position_df)
-                    dte = st.slider("DTE", 1, full_postion_df['days_to_exp'].values[0], value=full_postion_df['days_to_exp'].values[0])
-                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(csv_position_df, dte)
-
                     st.text(tick)
                     st.dataframe(position_df, hide_index=True, column_config=None)
                     st.dataframe(greeks_df, hide_index=True, column_config=None)
+
+                    dte = st.slider("DTE", 1, full_postion_df['days_to_exp'].values[0], value=full_postion_df['days_to_exp'].values[0])
+                    fig_map, weighted_profit_mtrx, weighted_loss_mtrx, weighted_rr_mtrx = price_vol_matrix_covered(csv_position_df, dte)
+
                     st.text(f'Weighted Profit: {weighted_profit_mtrx}')
                     st.text(f'Weighted Loss: {weighted_loss_mtrx}')
                     st.text(f'Weighted R/R: {weighted_rr_mtrx}')

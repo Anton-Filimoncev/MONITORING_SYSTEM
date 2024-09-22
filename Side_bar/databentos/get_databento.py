@@ -28,7 +28,7 @@ def decode_nearest_dte():
     week_num_list = ['week1', 'week2', 'week3', 'week4']
 
     week_days = ['1MON', '1TUE', '1WED', '1THU', '1FRI', '2MON', '2TUE', '2WED', '2THU', '2FRI', '3MON', '3TUE',
-                 '3WED', '3THU', '3FRI', '4MON', '4TUE', '4WED', '4THU', '4FRI', '5MON', '5TUE', '5WED', '5THU', '5FRI']
+                 '3WED', '3THU', '3FRI', '4MON', '4TUE', '4WED', '4THU', '4FRI']
     total_dates = {'Date': [], 'dte': []}  # 'dte':[], 'Week':[], 'Week_day':[]
     for week_day in week_days:
         m_date = pd.date_range(start_time_str, end_time_str, freq=f'WOM-{week_day}').values[0]

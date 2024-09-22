@@ -24,8 +24,7 @@ infoType = st.sidebar.checkbox("PORTFOLIO")
 
 
 with st.sidebar.expander('FUTURES'):
-    infoType_F_P = st.checkbox("F. Put")
-    infoType_F_C = st.checkbox("F. Call")
+    infoType_F_P_C = st.checkbox("F. Put/Call")
     infoType_F_ST = st.checkbox("F. Strangle")
     infoType_F_DIA = st.checkbox("F. Diagonal")
     infoType_F_COVER = st.checkbox("F. Covered")
@@ -60,11 +59,8 @@ if infoType:
 
 # # ************************************* FUTURES ***************************************
 # =====================================   Put
-if infoType_F_P:
-    f_put()
-# =====================================   Call
-if infoType_F_C:
-    f_call()
+if infoType_F_P_C:
+    f_put_call()
 # =====================================   Strangle
 if infoType_F_ST:
     f_strangle()
