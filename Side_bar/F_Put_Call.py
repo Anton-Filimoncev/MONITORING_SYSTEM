@@ -226,89 +226,69 @@ def f_put_call():
             my_bar.empty()
             # submit_button = st.form_submit_button(f'Commit_{num}' )
 
+    # -----------------------------
+    # ----------SELECTION----------
+    # -----------------------------
 
     st.header('-'*10 + 'SELECTION' + '-'*10)
-    with st.container():
 
-        col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
-        with col1:
-            ticker = st.text_input('Ticker', 'CL=F')
-            ticker_b = st.text_input('Ticker Bento', 'LO')
-        with col2:
-            nearest_dte = st.number_input('Nearest DTE', step=1, min_value=1, max_value=50000, value=90)
-        with col3:
-            data_type = st.radio('Instrument Type', ["OPTIONS", "FUTURES"])
+    with col1:
+        ticker = st.text_input('Ticker', 'KRE')
 
-        if 'quotes' not in st.session_state:
-            st.session_state['quotes'] = np.nan
+    with col2:
+        position_type = st.radio("Choose a position type", ('Put', 'Call'), horizontal=True)
+        side = st.radio("Choose a position type", ('Short', 'Long'), horizontal=True)
+    with col3:
+        nearest_dte = st.number_input('Nearest DTE', step=1, min_value=1, max_value=50000, value=45)
 
-        if 'needed_exp_date' not in st.session_state:
-            st.session_state['needed_exp_date'] = np.nan
+    if 'quotes' not in st.session_state:
+        st.session_state['quotes'] = np.nan
 
-        path_bento = 'Side_bar/databentos/req/'
+    if 'needed_exp_date' not in st.session_state:
+        st.session_state['needed_exp_date'] = np.nan
+    if st.button("GET MARKET DATA", type="primary"):
+        needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
+        quotes = hedginglab_get_quotes(ticker, nearest_dte)
+        # st.text(dte)
+        st.text('Exp Date: ' + str(needed_exp_date.date()))
+        # st.dataframe(quotes)
+        st.session_state['quotes'] = quotes
+        st.session_state['needed_exp_date'] = needed_exp_date
+        st.success('Market Data Downloaded!')
 
+    quotes = st.session_state['quotes']
+    needed_exp_date = st.session_state['needed_exp_date']
 
-        if data_type == "OPTIONS":
-            instr_type = 'OPT'
-            if st.button("GET MARKET DATA", type="primary"):
-                needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
-                quotes = hedginglab_get_quotes(ticker, nearest_dte)
-                quotes['iv'] = quotes['iv'] * 100
-                # st.text(dte)
-                st.text('Exp Date: ' + str(needed_exp_date.date()))
-                # st.dataframe(quotes)
-                st.session_state['quotes'] = quotes
-                st.session_state['needed_exp_date'] = needed_exp_date
-                st.success('Market Data Downloaded!')
+    col11, col12, col13 = st.columns(3)
+    with col11:
+        rate = st.number_input('Risk Rate', step=0.01, format="%.2f", min_value=0., max_value=50000.,  value=4.)
+    with col12:
+        percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=50000, value=50)
+        try:
+            days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
+        except:
+            days_to_expiration = np.nan #st.date_input('EXP date')
 
-        if data_type == "FUTURES":
-            instr_type = 'FUT'
-            if st.button("GET BENTO DATA", type="primary"):
-                needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, 'Strangle', path_bento)
-                quotes['iv'] = quotes['iv'] * 100
-                # st.text(dte)
-                st.text('Exp Date: ' + str(needed_exp_date.date()))
-                # st.dataframe(quotes)
-                st.session_state['quotes'] = quotes
-                st.session_state['needed_exp_date'] = needed_exp_date
-                st.success('Market Data Downloaded!')
+    with col13:
+        try:
+            closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
+                                                 value=int(days_to_expiration))
+        except:
+            closing_days_array = st.number_input('Closing Days Proba')
 
-        quotes = st.session_state['quotes']
-        needed_exp_date = st.session_state['needed_exp_date']
-
-        if '-' in ticker or '=' in ticker:
-            try:
-                days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
-            except:
-                days_to_expiration = np.nan  # st.date_input('EXP date')
-        else:
-            try:
-                days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
-            except:
-                days_to_expiration = np.nan  # st.date_input('EXP date')
-
-        col11, col12, col13 = st.columns(3)
-        with col11:
-            rate = st.number_input('Risk Rate', step=0.01, format="%.2f", min_value=0., max_value=50000., value=4.)
-        with col12:
-            percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=50000, value=50)
-
-        with col13:
-            try:
-                closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
-                                                     value=int(days_to_expiration))
-            except:
-                closing_days_array = st.number_input('Closing Days Proba')
-        #
-        # if submit_button_select:
-        #     st.success('Success commit!')
-
+    if side == 'Short':
         if st.button("Calculate", type="primary"):
             print('quotes')
             print(quotes)
-
-            strengle_data = get_strangle(ticker, rate, percentage_array, days_to_expiration, closing_days_array, quotes)
+            short_data, best_df, exp_move_hv, exp_move_iv = get_short(ticker, rate, days_to_expiration,
+                                                                      closing_days_array, percentage_array,
+                                                                      position_type, quotes)
 
             st.text('Best Parameters:')
-            st.dataframe(strengle_data, hide_index=True, column_config=None)
+            st.dataframe(best_df[['pop', 'exp_return', 'cvar', 'Strike']], hide_index=True, column_config=None)
+            st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
+            st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))
+            st.text('Total Parameters:')
+            st.dataframe(short_data, hide_index=True, column_config=None)

@@ -291,30 +291,27 @@ def get_f_strangle(tick, rate, percentage_array, days_to_expiration, closing_day
     return strangle_data, exp_move_hv
 
 def get_short(tick, rate, days_to_expiration, closing_days_array, percentage_array,
-              position_type, quotes, instr_type):
+              position_type, quotes):
     print(quotes)
     yahoo_stock = get_yahoo_price(tick)
     underlying = yahoo_stock['Close'].iloc[-1]
-    trials = 2000
+    trials = 5000
+
+    instr_type = 'OPT'
+    if '=' in tick or '-' in tick:
+        instr_type = 'FUT'
 
     sum_df = pd.DataFrame()
 
-    hv = get_exp_move(tick, yahoo_stock, closing_days_array)
+    hv = get_exp_move(tick, yahoo_stock, 244)
 
-    if position_type == 'P':
-        if '-' in tick or '=' in tick:
-            quotes['days_to_exp'] = days_to_expiration
-            quotes['underlyingPrice'] = underlying
-            quotes = quotes[quotes['instrument_class'] == position_type].reset_index(drop=True)
-            print('quotes111')
-        else:
-            quotes = quotes[quotes['side'] == 'put'].reset_index(drop=True)
-
+    if position_type == 'Put':
+        quotes = quotes[quotes['side'] == 'put'].reset_index(drop=True)
         quotes = quotes[quotes['strike'] <= underlying * 1].reset_index(drop=True)
-        # quotes = quotes[quotes['strike'] >= underlying * 0.9].reset_index(drop=True)
+        quotes = quotes[quotes['strike'] >= underlying * 0.9].reset_index(drop=True)
         for num, quote_row in quotes.iterrows():
             print(quote_row)
-            sigma = quote_row['iv']
+            sigma = quote_row['iv'] * 100
             short_strike = quote_row['strike']
             short_price = quote_row['bid']
             short_data = shortPut(underlying, sigma, rate, trials, days_to_expiration, [closing_days_array],
@@ -324,18 +321,13 @@ def get_short(tick, rate, days_to_expiration, closing_days_array, percentage_arr
             short_data['Strike'] = [short_strike]
             sum_df = pd.concat([sum_df, short_data])
 
-    if position_type == 'C':
-        if '-' in tick or '=' in tick:
-            quotes['days_to_exp'] = days_to_expiration
-            quotes['underlyingPrice'] = underlying
-            quotes = quotes[quotes['instrument_class'] == position_type].reset_index(drop=True)
-        else:
-            quotes = quotes[quotes['side'] == 'call'].reset_index(drop=True)
-        # quotes = quotes[quotes['strike'] <= underlying * 1.1].reset_index(drop=True)
+    if position_type == 'Call':
+        quotes = quotes[quotes['side'] == 'call'].reset_index(drop=True)
+        quotes = quotes[quotes['strike'] <= underlying * 1.1].reset_index(drop=True)
         quotes = quotes[quotes['strike'] >= underlying * 1].reset_index(drop=True)
         for num, quote_row in quotes.iterrows():
             print(quote_row)
-            sigma = quote_row['iv']
+            sigma = quote_row['iv'] * 100
             short_strike = quote_row['strike']
             short_price = quote_row['bid']
             short_data = shortCall(underlying, sigma, rate, trials, days_to_expiration, [closing_days_array],
@@ -354,7 +346,7 @@ def get_short(tick, rate, days_to_expiration, closing_days_array, percentage_arr
     best_df = sum_df[sum_df['top_score'] == sum_df['top_score'].max()]
 
     exp_move_hv = hv * underlying * math.sqrt(days_to_expiration / 365)
-    exp_move_iv = iv/100 * underlying * math.sqrt(days_to_expiration / 365)
+    exp_move_iv = iv * underlying * math.sqrt(days_to_expiration / 365)
 
     return sum_df, best_df, exp_move_hv, exp_move_iv
 

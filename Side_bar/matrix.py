@@ -490,7 +490,7 @@ def price_vol_matrix_covered(df, dte):
                 'IV': sigma_list,
                 'underlying': underlying_list,
                 'sigma_name': sigma_name,
-                'underlying_name': underlying_name,
+                'underlying_name': sorted(underlying_name),
             })
 
             matrix = pd.DataFrame()
@@ -675,7 +675,7 @@ def price_vol_matrix_covered(df, dte):
     except:
 
         temp_df = pd.DataFrame({
-            'Fist': underlying_list[::-1],
+            'Fist': sorted(underlying_list[::-1]),
             'Sec': underlying_name[::-1]
         })
 
