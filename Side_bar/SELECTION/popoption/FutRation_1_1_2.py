@@ -4,8 +4,8 @@ from .MonteCarlo_1_1_2_RETURN import monteCarlo_return
 import time
 from .BlackScholes import blackScholesPut
 from .BlackScholes import blackScholesCall
-from .Black76 import black76Put
-from .Black76 import black76Call
+from .Black76_112 import black76Put
+from .Black76_112 import black76Call
 import numpy as np
 
 

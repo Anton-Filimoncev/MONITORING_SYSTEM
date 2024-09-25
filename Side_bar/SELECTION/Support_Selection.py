@@ -291,22 +291,18 @@ def get_f_strangle(tick, rate, percentage_array, days_to_expiration, closing_day
     return strangle_data, exp_move_hv
 
 def get_short(tick, rate, days_to_expiration, closing_days_array, percentage_array,
-              position_type, quotes):
+              position_type, quotes, instr_type):
     print(quotes)
     yahoo_stock = get_yahoo_price(tick)
     underlying = yahoo_stock['Close'].iloc[-1]
     trials = 5000
-
-    instr_type = 'OPT'
-    if '=' in tick or '-' in tick:
-        instr_type = 'FUT'
 
     sum_df = pd.DataFrame()
 
     hv = get_exp_move(tick, yahoo_stock, 244)
 
     if position_type == 'Put':
-        quotes = quotes[quotes['side'] == 'put'].reset_index(drop=True)
+        quotes = quotes[quotes['instrument_class'] == 'P'].reset_index(drop=True)
         quotes = quotes[quotes['strike'] <= underlying * 1].reset_index(drop=True)
         quotes = quotes[quotes['strike'] >= underlying * 0.9].reset_index(drop=True)
         for num, quote_row in quotes.iterrows():
@@ -314,7 +310,7 @@ def get_short(tick, rate, days_to_expiration, closing_days_array, percentage_arr
             sigma = quote_row['iv'] * 100
             short_strike = quote_row['strike']
             short_price = quote_row['bid']
-            short_data = shortPut(underlying, sigma, rate, trials, days_to_expiration, [closing_days_array],
+            short_data = shortPut(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration,[closing_days_array],
                                   [percentage_array],
                                   short_strike, short_price, yahoo_stock, instr_type)
             short_data = pd.DataFrame(short_data)
@@ -322,7 +318,7 @@ def get_short(tick, rate, days_to_expiration, closing_days_array, percentage_arr
             sum_df = pd.concat([sum_df, short_data])
 
     if position_type == 'Call':
-        quotes = quotes[quotes['side'] == 'call'].reset_index(drop=True)
+        quotes = quotes[quotes['instrument_class'] == 'C'].reset_index(drop=True)
         quotes = quotes[quotes['strike'] <= underlying * 1.1].reset_index(drop=True)
         quotes = quotes[quotes['strike'] >= underlying * 1].reset_index(drop=True)
         for num, quote_row in quotes.iterrows():
@@ -330,7 +326,63 @@ def get_short(tick, rate, days_to_expiration, closing_days_array, percentage_arr
             sigma = quote_row['iv'] * 100
             short_strike = quote_row['strike']
             short_price = quote_row['bid']
-            short_data = shortCall(underlying, sigma, rate, trials, days_to_expiration, [closing_days_array],
+            short_data = shortCall(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration,[closing_days_array],
+                                   [percentage_array],
+                                   short_strike, short_price, yahoo_stock, instr_type)
+            short_data = pd.DataFrame(short_data)
+            short_data['Strike'] = [short_strike]
+            sum_df = pd.concat([sum_df, short_data])
+
+    nearest_atm_strike = nearest_equal_abs(quotes['strike'].astype('float'), underlying)
+    iv = quotes[quotes['strike'] == nearest_atm_strike]['iv'].values.tolist()[0]
+    print('nearest_strike', nearest_atm_strike)
+    print('current_iv', iv)
+
+    sum_df['top_score'] = sum_df['pop'] * sum_df['exp_return']
+    best_df = sum_df[sum_df['top_score'] == sum_df['top_score'].max()]
+
+    exp_move_hv = hv * underlying * math.sqrt(days_to_expiration / 365)
+    exp_move_iv = iv * underlying * math.sqrt(days_to_expiration / 365)
+
+    return sum_df, best_df, exp_move_hv, exp_move_iv
+
+def get_long(tick, rate, days_to_expiration, closing_days_array, percentage_array,
+              position_type, quotes, instr_type):
+    print(quotes)
+    yahoo_stock = get_yahoo_price(tick)
+    underlying = yahoo_stock['Close'].iloc[-1]
+    trials = 5000
+
+    sum_df = pd.DataFrame()
+
+    hv = get_exp_move(tick, yahoo_stock, 244)
+
+    if position_type == 'Put':
+        quotes = quotes[quotes['instrument_class'] == 'P'].reset_index(drop=True)
+        quotes = quotes[quotes['strike'] <= underlying * 1.2].reset_index(drop=True)
+        quotes = quotes[quotes['strike'] >= underlying * 0.8].reset_index(drop=True)
+        for num, quote_row in quotes.iterrows():
+            print(quote_row)
+            sigma = quote_row['iv'] * 100
+            short_strike = quote_row['strike']
+            short_price = quote_row['bid']
+            short_data = longPut(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration,[closing_days_array],
+                                  [percentage_array],
+                                  short_strike, short_price, yahoo_stock, instr_type)
+            short_data = pd.DataFrame(short_data)
+            short_data['Strike'] = [short_strike]
+            sum_df = pd.concat([sum_df, short_data])
+
+    if position_type == 'Call':
+        quotes = quotes[quotes['instrument_class'] == 'C'].reset_index(drop=True)
+        quotes = quotes[quotes['strike'] <= underlying * 1.2].reset_index(drop=True)
+        quotes = quotes[quotes['strike'] >= underlying * 0.8].reset_index(drop=True)
+        for num, quote_row in quotes.iterrows():
+            print(quote_row)
+            sigma = quote_row['iv'] * 100
+            short_strike = quote_row['strike']
+            short_price = quote_row['bid']
+            short_data = longCall(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration,[closing_days_array],
                                    [percentage_array],
                                    short_strike, short_price, yahoo_stock, instr_type)
             short_data = pd.DataFrame(short_data)
@@ -711,61 +763,61 @@ def get_risk_reversal(tick, sigma, rate, days_to_expiration, closing_days_array,
     return pd.DataFrame(risk_reversal_data)
 
 
-def get_long(ticker, rate, days_to_expiration, closing_days_array, percentage_array,
-                                  side, quotes, instr_type):
-    yahoo_stock = get_yahoo_price(ticker)
-    underlying = yahoo_stock['Close'].iloc[-1]
-    trials = 2000
-
-    sum_df = pd.DataFrame()
-
-    if side == 'P':
-        if '-' in ticker or '=' in ticker:
-            quotes['days_to_exp'] = days_to_expiration
-            quotes['underlyingPrice'] = underlying
-            quotes = quotes[quotes['instrument_class'] == side].reset_index(drop=True)
-            print('quotes111')
-
-        else:
-            quotes = quotes[quotes['side'] == 'put'].reset_index(drop=True)
-
-        quotes = quotes[quotes['strike'] <= underlying * 1.2].reset_index(drop=True)
-        quotes = quotes[quotes['strike'] >= underlying * 0.8].reset_index(drop=True)
-
-        for num, quote_row in quotes.iterrows():
-            print(quote_row)
-            sigma = quote_row['iv']
-            long_strike = quote_row['strike']
-            long_price = quote_row['bid']
-            long_data = longPut(underlying, sigma, rate, trials, days_to_expiration, [closing_days_array],
-                                  [percentage_array], long_strike, long_price, yahoo_stock, instr_type)
-            long_data = pd.DataFrame(long_data)
-            long_data['Strike'] = [long_strike]
-            sum_df = pd.concat([sum_df, long_data])
-
-    if side == 'C':
-        if '-' in ticker or '=' in ticker:
-            quotes['days_to_exp'] = days_to_expiration
-            quotes['underlyingPrice'] = underlying
-            quotes = quotes[quotes['instrument_class'] == side].reset_index(drop=True)
-        else:
-            quotes = quotes[quotes['side'] == 'call'].reset_index(drop=True)
-
-        quotes = quotes[quotes['strike'] <= underlying * 1.2].reset_index(drop=True)
-        quotes = quotes[quotes['strike'] >= underlying * 0.8].reset_index(drop=True)
-
-        for num, quote_row in quotes.iterrows():
-            print(quote_row)
-            sigma = quote_row['iv']
-            long_strike = quote_row['strike']
-            long_price = quote_row['bid']
-            long_data = longCall(underlying, sigma, rate, trials, days_to_expiration, [closing_days_array],
-                                  [percentage_array], long_strike, long_price, yahoo_stock, instr_type)
-            long_data = pd.DataFrame(long_data)
-            long_data['Strike'] = [long_strike]
-            sum_df = pd.concat([sum_df, long_data])
-
-    return sum_df
+# def get_long(ticker, rate, days_to_expiration, closing_days_array, percentage_array,
+#                                   side, quotes, instr_type):
+#     yahoo_stock = get_yahoo_price(ticker)
+#     underlying = yahoo_stock['Close'].iloc[-1]
+#     trials = 2000
+#
+#     sum_df = pd.DataFrame()
+#
+#     if side == 'P':
+#         if '-' in ticker or '=' in ticker:
+#             quotes['days_to_exp'] = days_to_expiration
+#             quotes['underlyingPrice'] = underlying
+#             quotes = quotes[quotes['instrument_class'] == side].reset_index(drop=True)
+#             print('quotes111')
+#
+#         else:
+#             quotes = quotes[quotes['side'] == 'put'].reset_index(drop=True)
+#
+#         quotes = quotes[quotes['strike'] <= underlying * 1.2].reset_index(drop=True)
+#         quotes = quotes[quotes['strike'] >= underlying * 0.8].reset_index(drop=True)
+#
+#         for num, quote_row in quotes.iterrows():
+#             print(quote_row)
+#             sigma = quote_row['iv']
+#             long_strike = quote_row['strike']
+#             long_price = quote_row['bid']
+#             long_data = longPut(underlying, sigma, rate, trials, days_to_expiration, [closing_days_array],
+#                                   [percentage_array], long_strike, long_price, yahoo_stock, instr_type)
+#             long_data = pd.DataFrame(long_data)
+#             long_data['Strike'] = [long_strike]
+#             sum_df = pd.concat([sum_df, long_data])
+#
+#     if side == 'C':
+#         if '-' in ticker or '=' in ticker:
+#             quotes['days_to_exp'] = days_to_expiration
+#             quotes['underlyingPrice'] = underlying
+#             quotes = quotes[quotes['instrument_class'] == side].reset_index(drop=True)
+#         else:
+#             quotes = quotes[quotes['side'] == 'call'].reset_index(drop=True)
+#
+#         quotes = quotes[quotes['strike'] <= underlying * 1.2].reset_index(drop=True)
+#         quotes = quotes[quotes['strike'] >= underlying * 0.8].reset_index(drop=True)
+#
+#         for num, quote_row in quotes.iterrows():
+#             print(quote_row)
+#             sigma = quote_row['iv']
+#             long_strike = quote_row['strike']
+#             long_price = quote_row['bid']
+#             long_data = longCall(underlying, sigma, rate, trials, days_to_expiration, [closing_days_array],
+#                                   [percentage_array], long_strike, long_price, yahoo_stock, instr_type)
+#             long_data = pd.DataFrame(long_data)
+#             long_data['Strike'] = [long_strike]
+#             sum_df = pd.concat([sum_df, long_data])
+#
+#     return sum_df
 
 def get_f_long(tick, rate, days_to_expiration, closing_days_array, percentage_array,
                                   position_type, sigma, long_strike, long_price):
@@ -931,6 +983,8 @@ def get_ratio_112(ticker, rate,  days_to_expiration, closing_days_array, percent
                                                        short_1_strike, short_2_strike, long_prime, short_1_prime, short_2_prime,
                                                        yahoo_stock, long_count,
                                                        short_1_count, short_2_count, start_side, instr_type)
+
+
                     print('da_ratio_112_data', da_ratio_112_data)
                     ratio_data = pd.DataFrame(da_ratio_112_data)
                     ratio_data['Strike Long'] = [long_strike]

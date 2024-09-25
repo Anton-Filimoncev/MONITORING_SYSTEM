@@ -14,9 +14,8 @@ import math
 # Earnings date and stock splits are not considered.
 
 
-def monteCarlo(underlying, rate, sigma_short, sigma_long, days_to_expiration_short, days_to_expiration_long,
-               closing_days_array, trials, initial_credit, min_profit, strikes, bsm_func, yahoo_stock, short_count,
-               long_count):
+def monteCarlo(underlying, rate, sigma_short, sigma_long, days_to_expiration_short, days_to_expiration_long, closing_days_array, trials, initial_credit,
+                   min_profit, strikes, bsm_func, yahoo_stock):
 
     profit_list = []
     price_list = []
@@ -33,8 +32,6 @@ def monteCarlo(underlying, rate, sigma_short, sigma_long, days_to_expiration_sho
     log_returns = np.log(yahoo_stock['Close'] / yahoo_stock['Close'].shift(1))
     # Compute Volatility using the pandas rolling standard deviation function
     volatility = log_returns.rolling(window=252).std() * np.sqrt(252)
-    print('volatility')
-    print(volatility)
     volatility = volatility[-1]
 
     dt = 1 / 365  # 365 calendar days in a year
@@ -86,13 +83,9 @@ def monteCarlo(underlying, rate, sigma_short, sigma_long, days_to_expiration_sho
             time_fraction_short = dt * (days_to_expiration_short - r)
             time_fraction_long = dt * (days_to_expiration_long - r)
 
-            debit = bsm_func(stock_price, strikes, rate, time_fraction_short, time_fraction_long, sigma_short,
-                             sigma_long, short_count, long_count)
-
+            debit, P_short_cals, P_long_cals = bsm_func(stock_price, strikes, rate, time_fraction_short, time_fraction_long, sigma_short, sigma_long)
 
             profit = debit + initial_credit  # Profit if we were to close on current day
-
-
             profit_list.append(profit)
             price_list.append(stock_price)
 

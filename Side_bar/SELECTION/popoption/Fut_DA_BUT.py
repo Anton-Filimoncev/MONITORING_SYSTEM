@@ -79,4 +79,4 @@ def fut_DA_BUT(underlying, sigma_long_1, sigma_long_2, sigma_short, rate, trials
         "avg_dtc": avg_dtc,
         "avg_dtc_error": avg_dtc_error
     }
-    return response
+    return response, max_profit, percentage_type

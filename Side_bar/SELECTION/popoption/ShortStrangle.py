@@ -20,8 +20,8 @@ def shortStrangle(underlying, sigma, rate, trials, days_to_expiration,
                   call_short_price, put_short_strike, put_short_price, yahoo_stock):
 
     # Data Verification
-    # if call_short_strike < put_short_strike:
-    #     raise ValueError("Call Strike cannot be less than Put Strike")
+    if call_short_strike < put_short_strike:
+        raise ValueError("Call Strike cannot be less than Put Strike")
 
     for closing_days in closing_days_array:
         if closing_days > days_to_expiration:

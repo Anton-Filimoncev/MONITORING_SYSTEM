@@ -1,5 +1,5 @@
 from numba import jit
-from .MonteCarloCALENDAR import monteCarlo
+from .MonteCarlo_CALENDAR import monteCarlo
 from .MonteCarloCALENDAR_RETURN import monteCarlo_return
 import time
 from .BlackScholes import blackScholesPut
@@ -19,7 +19,7 @@ def bsm_debit(sim_price, strikes, rate, time_fraction_short, time_fraction_long,
 
 def putCalendar_template(underlying, sigma_short, sigma_long, rate, trials, days_to_expiration_short,
                 days_to_expiration_long, closing_days_array, percentage_array, put_long_strike,
-                put_long_price, put_short_strike, put_short_price, yahoo_stock, short_count, long_count, position_options):
+                put_long_price, put_short_strike, put_short_price, yahoo_stock, short_count, long_count):
     # Data Verification
     # if put_long_price <= put_short_price:
     #     raise ValueError("Long price cannot be less than or equal to Short price")
@@ -35,14 +35,14 @@ def putCalendar_template(underlying, sigma_short, sigma_long, rate, trials, days
         raise ValueError("closing_days_array and percentage_array sizes must be equal.")
 
     # SIMULATION
-    initial_debit = abs((put_long_price*long_count) - (put_short_price*short_count))  # Debit paid from opening trade
+    initial_debit = abs(put_long_price - put_short_price)  # Debit paid from opening trade
     # initial_credit = -1 * initial_debit
-    initial_credit = (put_short_price*short_count) -(put_long_price*long_count)
-    max_profit = initial_debit
-    percentage_type = 'Initial'
-    if position_options['pop_from'] == 'margin':
-        max_profit = (0.2 * put_short_strike) * (short_count-long_count)
-        percentage_type = 'Margin'
+    initial_credit = put_short_price - put_long_price
+    # max_profit = initial_debit
+    # percentage_type = 'Initial'
+    # if position_options['pop_from'] == 'margin':
+    max_profit = (0.2 * put_short_strike) * (short_count-long_count)
+    percentage_type = 'Margin'
 
     percentage_array = [x / 100 for x in percentage_array]
     min_profit = [max_profit * x for x in percentage_array]
@@ -66,6 +66,7 @@ def putCalendar_template(underlying, sigma_short, sigma_long, rate, trials, days
                                                             days_to_expiration_short, days_to_expiration_long,
                                                             closing_days_array, trials, initial_credit, min_profit,
                                                             strikes, bsm_debit, yahoo_stock, short_count, long_count)
+
 
     response = {
         "pop": pop,

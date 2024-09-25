@@ -235,7 +235,8 @@ def f_put_call():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        ticker = st.text_input('Ticker', 'KRE')
+        ticker = st.text_input('Ticker', 'CL=F')
+        ticker_b = st.text_input('Ticker Bento', 'LO')
 
     with col2:
         position_type = st.radio("Choose a position type", ('Put', 'Call'), horizontal=True)
@@ -248,15 +249,43 @@ def f_put_call():
 
     if 'needed_exp_date' not in st.session_state:
         st.session_state['needed_exp_date'] = np.nan
-    if st.button("GET MARKET DATA", type="primary"):
-        needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
-        quotes = hedginglab_get_quotes(ticker, nearest_dte)
-        # st.text(dte)
-        st.text('Exp Date: ' + str(needed_exp_date.date()))
-        # st.dataframe(quotes)
-        st.session_state['quotes'] = quotes
-        st.session_state['needed_exp_date'] = needed_exp_date
-        st.success('Market Data Downloaded!')
+
+    data_type = "OPTIONS"
+    if '-' in tick or '=' in tick:
+        data_type = "FUTURES"
+
+    if data_type == "OPTIONS":
+        instr_type = 'OPT'
+        side_type = 'P'
+        if dia_type == 'CALL':
+            side_type = 'C'
+        if st.button("GET MARKET DATA", type="primary"):
+            needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
+            quotes = hedginglab_get_quotes(ticker, nearest_dte)
+            quotes['iv'] = quotes['iv'] * 100
+            # st.text(dte)
+            st.text('Exp Date: ' + str(needed_exp_date.date()))
+            # st.dataframe(quotes)
+            st.session_state['quotes'] = quotes
+            st.session_state['needed_exp_date'] = needed_exp_date
+            st.success('Market Data Downloaded!')
+
+    if data_type == "FUTURES":
+        instr_type = 'FUT'
+
+        side_type = 'P'
+        if dia_type == 'CALL':
+            side_type = 'C'
+
+        if st.button("GET BENTO DATA", type="primary"):
+            needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, side_type, path_bento)
+            quotes['iv'] = quotes['iv'] * 100
+            # st.text(dte)
+            st.text('Exp Date: ' + str(needed_exp_date.date()))
+            # st.dataframe(quotes)
+            st.session_state['quotes'] = quotes
+            st.session_state['needed_exp_date'] = needed_exp_date
+            st.success('Market Data Downloaded!')
 
     quotes = st.session_state['quotes']
     needed_exp_date = st.session_state['needed_exp_date']
@@ -284,7 +313,21 @@ def f_put_call():
             print(quotes)
             short_data, best_df, exp_move_hv, exp_move_iv = get_short(ticker, rate, days_to_expiration,
                                                                       closing_days_array, percentage_array,
-                                                                      position_type, quotes)
+                                                                      position_type, quotes, instr_type)
+
+            st.text('Best Parameters:')
+            st.dataframe(best_df[['pop', 'exp_return', 'cvar', 'Strike']], hide_index=True, column_config=None)
+            st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
+            st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))
+            st.text('Total Parameters:')
+            st.dataframe(short_data, hide_index=True, column_config=None)
+    else:
+        if st.button("Calculate", type="primary"):
+            print('quotes')
+            print(quotes)
+            short_data, best_df, exp_move_hv, exp_move_iv = get_long(ticker, rate, days_to_expiration,
+                                                                      closing_days_array, percentage_array,
+                                                                      position_type, quotes, instr_type)
 
             st.text('Best Parameters:')
             st.dataframe(best_df[['pop', 'exp_return', 'cvar', 'Strike']], hide_index=True, column_config=None)

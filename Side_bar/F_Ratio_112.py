@@ -310,8 +310,8 @@ def f_ratio_112():
     with st.container():
         col91, col92, col93 = st.columns([1, 1, 1])
         with col91:
-            ticker = st.text_input('Ticker', 'ES=F')
-            ticker_b = st.text_input('Ticker Bento', 'ES=F')
+            ticker = st.text_input('Ticker', 'CL=F')
+            ticker_b = st.text_input('Ticker Bento', 'LO')
         with col92:
             nearest_dte = st.number_input('Days to EXP', step=1, min_value=0, max_value=50000, value=90)
         with col93:
@@ -331,6 +331,9 @@ def f_ratio_112():
 
         if data_type == "OPTIONS":
             instr_type = 'OPT'
+            side_type = 'P'
+            if dia_type == 'CALL':
+                side_type = 'C'
             if st.button("GET MARKET DATA", type="primary"):
                 needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
                 quotes = hedginglab_get_quotes(ticker, nearest_dte)
@@ -344,8 +347,11 @@ def f_ratio_112():
 
         if data_type == "FUTURES":
             instr_type = 'FUT'
+            side_type = 'P'
+            if dia_type == 'CALL':
+                side_type = 'C'
             if st.button("GET BENTO DATA", type="primary"):
-                needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, dia_type, path_bento)
+                needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, side_type, path_bento)
                 quotes['iv'] = quotes['iv'] * 100
                 # st.text(dte)
                 st.text('Exp Date: ' + str(needed_exp_date.date()))
@@ -376,7 +382,7 @@ def f_ratio_112():
 
             da_ratio_112_data = get_ratio_112(ticker, risk_rate,  days_to_expiration,
                                           closing_days_array, percentage_array, quotes,  long_count, short_1_count,
-                                          short_2_count, dia_type, instr_type)
+                                          short_2_count, side_type, instr_type)
 
             st.text('Parameters:')
             st.dataframe(da_ratio_112_data, hide_index=True, column_config=None)
