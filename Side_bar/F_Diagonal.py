@@ -5,6 +5,8 @@ import glob
 from .Support import *
 import datetime
 from .matrix  import price_vol_matrix, price_vol_matrix_covered
+from .barchart.diagonal_barchart import barchart_selection
+import os
 
 def f_dia():
 
@@ -273,3 +275,45 @@ def f_dia():
                 # submit_button = st.form_submit_button(f'Commit_{num}' )
 
 
+    infoType_barchart = st.checkbox("~~ BARCHART ~~")
+    # try:
+    if infoType_barchart:
+        side = st.selectbox(
+            "TYPE",
+            ("Put", "Call"),
+            index=None,
+            placeholder="Select TYPE...",
+        )
+
+        tick = st.text_input('Ticker', 'ZC=F')
+
+        folder_path = 'Side_bar/BARCHART_DATA'  # Замените на путь к вашей папке
+        file_names = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
+        dte_list = []
+
+        for file in file_names:
+            dte_list.append(file.split('--')[0][-8:])
+        date_format = "%m_%d_%y"  # Формат для преобразования
+        date1 = datetime.datetime.strptime(dte_list[0], date_format)
+        date2 = datetime.datetime.strptime(dte_list[1], date_format)
+
+        # Сравниваем даты
+        if date1 < date2:
+            short_df = pd.read_csv(f'{folder_path}/{file_names[0]}')
+            long_df = pd.read_csv(f'{folder_path}/{file_names[1]}')
+            print('short_df', file_names[0])
+            # Вычисляем разницу в днях
+            short_dte = (date1 - datetime.datetime.now()).days
+            long_dte = (date2 - datetime.datetime.now()).days
+        elif date1 > date2:
+            short_df = pd.read_csv(f'{folder_path}/{file_names[1]}')
+            print('short_df', file_names[1])
+            long_df = pd.read_csv(f'{folder_path}/{file_names[0]}')
+            # Вычисляем разницу в днях
+            short_dte = (date2 - datetime.datetime.now()).days
+            long_dte = (date1 - datetime.datetime.now()).days
+
+        barchart_button = st.button('Run')
+        if barchart_button:
+            barchart_selection(short_df, long_df, side, short_dte, long_dte, tick)
+        pass
