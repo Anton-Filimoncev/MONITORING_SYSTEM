@@ -240,14 +240,14 @@ def solo_position_calc_new(row, yahoo_stock, sigma, days_to_expiration, days_to_
     print('prime', prime)
     print('instr_type', instr_type)
 
-    if pos_type == 'PUT':
+    if pos_type == 'Put':
         if short_long > 0:
             response = longPut(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration_min,
                                [closing_days_array], [percentage_array], strike, prime, yahoo_stock, instr_type)
         else:
             response = shortPut(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration_min,
                                 [closing_days_array], [percentage_array], strike, prime, yahoo_stock, instr_type)
-    if pos_type == 'CALL':
+    if pos_type == 'Call':
         if short_long > 0:
             response = longCall(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration_min,
                                 [closing_days_array], [percentage_array], strike, prime, yahoo_stock, instr_type)
@@ -255,7 +255,7 @@ def solo_position_calc_new(row, yahoo_stock, sigma, days_to_expiration, days_to_
             response = shortCall(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration_min,
                                  [closing_days_array], [percentage_array], strike, prime, yahoo_stock, instr_type)
 
-    if pos_type == 'STOCK':
+    if pos_type == 'Stock':
         if short_long > 0:
             response = longStock(underlying, sigma, rate, trials, days_to_expiration, days_to_expiration_min,
                                  [closing_days_array], [percentage_array], strike, prime, yahoo_stock, instr_type)
@@ -1400,23 +1400,35 @@ def update_postion(csv_position_df, pos_type, risk_rate, path_bento):
 
 
 
-def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick):
+def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate, percentage_array, multiplier):
     short_df = short_df[short_df['Type'] == side][:-1]
     short_df.columns = short_df.columns.str.lower()
     short_df['strike'] = short_df['strike'].str.replace('-', '.')
     short_df['iv'] = short_df['iv'].str.replace('%', '')
     short_df[['strike', 'last', 'iv']] = short_df[['strike', 'last', 'iv']].astype('float')
-    short_df['side'] = -1
+    short_df['side'] = side
+    short_df['count'] = -1
+    short_df['prime'] = short_df['last']
+    short_df['days_to_exp'] = short_dte
+
+
     long_df = long_df[long_df['Type'] == side][:-1]
     long_df.columns = long_df.columns.str.lower()
     long_df['strike'] = long_df['strike'].str.replace('-', '.')
     long_df['iv'] = long_df['iv'].str.replace('%', '')
     long_df[['strike', 'last', 'iv']] = long_df[['strike', 'last', 'iv']].astype('float')
-    long_df['side'] = 1
+    long_df['side'] = side
+    long_df['prime'] = long_df['last']
+    long_df['count'] = 1
+    long_df['days_to_exp'] = long_dte
+
 
 
     yahoo_data = yf.download(tick, progress=False)['2018-01-01':]
     underlying = yahoo_data['Close'].iloc[-1]
+    long_df['underlying'] = underlying
+    short_df['underlying'] = underlying
+
 
     std_short = yahoo_data['Close'][-(short_dte + 1):].std()
     std_long = yahoo_data['Close'][-(long_dte + 1):].std()
@@ -1442,21 +1454,41 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick):
             combined_df = pd.concat([row1.to_frame().T, row2.to_frame().T], axis=0)
             combined_dfs.append(combined_df)
 
+    return_df = pd.DataFrame()
+
     print('combined_dfs')
     print(combined_dfs)
+    for df in combined_dfs:
+        # print('num', num)
+        print('df')
+        print(df)
 
-    #
-    # min_dte = input_new_df['days_to_exp'].min()
-    # response_df = pd.DataFrame()
-    #
-    # for num, row in input_new_df.iterrows():
-    #     open_cost += -row['prime'] * row['count']
-    #
-    #     response = pd.DataFrame(
-    #         solo_position_calc_new(row, yahoo_price_df, row['iv'],
-    #                                row['days_to_exp'], min_dte, min_dte,
-    #                                row['underlying'], row['strike'],
-    #                                row['prime']))
-    #     response[['cvar', 'exp_return']] = (response[['cvar', 'exp_return']] * np.abs(row['count']) * row['multiplier'])
+        df['symbol'] = tick
+        df['rate'] = rate
+        df['percentage_array'] = percentage_array
+        df['multiplier'] = multiplier
 
-    pass
+        min_dte = df['days_to_exp'].min()
+        response_df = pd.DataFrame()
+
+        for num, row in df.iterrows():
+
+            response = pd.DataFrame(
+                solo_position_calc_new(row, yahoo_data, row['iv'],
+                                       row['days_to_exp'], min_dte, min_dte,
+                                       row['underlying'], row['strike'],
+                                       row['prime']))
+            response[['cvar', 'exp_return']] = (response[['cvar', 'exp_return']] * np.abs(row['count']) * row['multiplier'])
+            response_df = pd.concat([response_df, response])
+
+        response_df = response_df.mean()
+        response_df['Short_Strike'] = df[df['count'] == -1]['strike'].values[0]
+        response_df['Long_Strike'] = df[df['count'] == 1]['strike'].values[0]
+
+        response_df = response_df.round(4)
+        return_df = pd.concat([return_df, response_df.to_frame().T], axis=0)
+    print('return_df')
+    print(return_df)
+    return_df['top_score'] = return_df['pop'] * return_df['exp_return']
+    best_df = return_df[return_df['top_score'] == return_df['top_score'].max()]
+    return return_df, best_df
