@@ -297,9 +297,7 @@ def f_dia():
             multiplier = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
 
 
-
-
-        folder_path = 'Side_bar/BARCHART_DATA'  # Замените на путь к вашей папке
+        folder_path = 'Side_bar/BARCHART_DATA/diagonal'  # Замените на путь к вашей папке
         file_names = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
         dte_list = []
 
