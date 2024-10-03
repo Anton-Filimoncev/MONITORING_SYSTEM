@@ -1404,7 +1404,7 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
     short_df = short_df[short_df['Type'] == side][:-1]
     short_df.columns = short_df.columns.str.lower()
     short_df['strike'] = short_df['strike'].str.replace('-', '.').replace('s', '')
-    short_df['last'] = short_df['last'].str.replace('-', '.').replace('s', '')
+    # short_df['last'] = short_df['last'].str.replace('-', '.').replace('s', '')
     short_df['iv'] = short_df['iv'].str.replace('%', '')
     short_df[['strike', 'last', 'iv']] = short_df[['strike', 'last', 'iv']].astype('float')
     short_df['side'] = side
@@ -1416,7 +1416,7 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
     long_df = long_df[long_df['Type'] == side][:-1]
     long_df.columns = long_df.columns.str.lower()
     long_df['strike'] = long_df['strike'].str.replace('-', '.').replace('s', '')
-    long_df['last'] = long_df['last'].str.replace('-', '.').replace('s', '')
+    # long_df['last'] = long_df['last'].str.replace('-', '.').replace('s', '')
     long_df['iv'] = long_df['iv'].str.replace('%', '')
     long_df[['strike', 'last', 'iv']] = long_df[['strike', 'last', 'iv']].astype('float')
     long_df['side'] = side
