@@ -1445,9 +1445,14 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
     print(long_df)
     long_strike = long_df['strike'].values[0]
 
-    short_df_1 = short_df[short_df['strike'] <= long_strike].sort_values('strike')[:3]
+    print('long_strike')
+    print(long_strike)
+    print(short_df[short_df['strike'] < long_strike].sort_values('strike', ascending=False))
+
+    short_df_1 = short_df[short_df['strike'] < long_strike].sort_values('strike', ascending=False)[:3]
     short_df_2 = short_df[short_df['delta'].abs() < 0.1]
     short_df_2 = short_df_2[short_df_2['delta'].abs() > 0.06]
+    short_df_2['count'] = -2
 
     print('short_df_1')
     print(short_df_1)
@@ -1495,7 +1500,8 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
             response_df = pd.concat([response_df, response])
 
         response_df = response_df.mean()
-        response_df['Short_Strike'] = df[df['count'] == -1]['strike'].values[0]
+        response_df['Short_Strike_1'] = df[df['count'] == -1]['strike'].values[0]
+        response_df['Short_Strike_2'] = df[df['count'] == -2]['strike'].values[0]
         response_df['Long_Strike'] = df[df['count'] == 1]['strike'].values[0]
 
         response_df = response_df.round(4)
