@@ -1447,7 +1447,7 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
         long_delta = nearest_equal_abs(long_df['delta'].abs().values.tolist(), 0.25)
         long_df = long_df[long_df['delta'].abs() == long_delta]
         long_strike = long_df['strike'].values[0]
-        short_df_1 = short_df[short_df['strike'] > long_strike].sort_values('strike', ascending=False)[:3]
+        short_df_1 = short_df[short_df['strike'] > long_strike].sort_values('strike', ascending=True)[:3]
         short_df_2 = short_df[short_df['delta'].abs() < 0.1]
         short_df_2 = short_df_2[short_df_2['delta'].abs() > 0.06]
         short_df_2['count'] = -2
