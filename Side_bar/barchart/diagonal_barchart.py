@@ -1491,6 +1491,6 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
         return_df = pd.concat([return_df, response_df.to_frame().T], axis=0)
     print('return_df')
     print(return_df)
-    return_df['top_score'] = return_df['pop'] * return_df['exp_return']
-    best_df = return_df[return_df['top_score'] == return_df['top_score'].max()]
+    best_df = return_df.sort_values(['pop', 'cvar'])[:1]
+    # best_df = return_df[return_df['top_score'] == return_df['top_score'].max()]
     return return_df, best_df

@@ -15,6 +15,8 @@ from ..popoption.ShortCall import shortCall
 from ..popoption.ShortStrangle import shortStrangle
 from ..popoption.PutCalendar import putCalendar
 
+def nearest_equal_abs(lst, target):
+    return min(lst, key=lambda x: abs(abs(x) - target))
 
 def get_black_scholes_greeks(type_option, stock_price, strike, risk_rate, vol_opt, days_to_exp):
     if type_option == 'p':
@@ -1429,14 +1431,28 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
     std_short = yahoo_data['Close'][-(short_dte + 1):].std()
     std_long = yahoo_data['Close'][-(long_dte + 1):].std()
 
-    short_df = short_df[short_df['strike'] >= (underlying - (std_short*0.25))]
+    # ------------------------------------------------------------------------
+
+
+
     short_df = short_df[short_df['strike'] <= (underlying + (std_short*0.25))]
 
-    long_df = long_df[long_df['strike'] >= underlying - (std_long*0.5)]
-    long_df = long_df[long_df['strike'] <= underlying]
+    long_delta = nearest_equal_abs(long_df['delta'].abs().values.tolist(), 0.25)
+    print('long_delta')
+    print(long_delta)
+    long_df = long_df[long_df['delta'].abs() == long_delta]
+    print('long_df')
+    print(long_df)
+    long_strike = long_df['strike'].values[0]
 
-    print('short_df')
-    print(short_df)
+    short_df_1 = short_df[short_df['strike'] <= long_strike].sort_values('strike')[:3]
+    short_df_2 = short_df[short_df['delta'].abs() < 0.1]
+    short_df_2 = short_df_2[short_df_2['delta'].abs() > 0.06]
+
+    print('short_df_1')
+    print(short_df_1)
+    print('short_df_2')
+    print(short_df_2)
     print('long_df')
     print(long_df)
 
@@ -1444,11 +1460,12 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
     combined_dfs = []
 
     # Перебираем все строки из df1 и df2
-    for i, row1 in short_df.iterrows():
+    for i, row1 in short_df_1.iterrows():
         for j, row2 in long_df.iterrows():
-            # Создаём DataFrame из двух строк: одна из df1 и одна из df2
-            combined_df = pd.concat([row1.to_frame().T, row2.to_frame().T], axis=0)
-            combined_dfs.append(combined_df)
+            for _, row3 in short_df_2.iterrows():
+                # Создаём DataFrame
+                combined_df = pd.concat([row1.to_frame().T, row2.to_frame().T, row3.to_frame().T], axis=0)
+                combined_dfs.append(combined_df)
 
     return_df = pd.DataFrame()
 
@@ -1485,6 +1502,6 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
         return_df = pd.concat([return_df, response_df.to_frame().T], axis=0)
     print('return_df')
     print(return_df)
-    return_df['top_score'] = return_df['pop'] * return_df['exp_return']
-    best_df = return_df[return_df['top_score'] == return_df['top_score'].max()]
+    best_df = return_df.sort_values(['pop', 'cvar'])[:1]
+    # best_df = return_df[return_df['top_score'] == return_df['top_score'].max()]
     return return_df, best_df

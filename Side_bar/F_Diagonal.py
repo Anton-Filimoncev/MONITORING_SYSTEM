@@ -302,7 +302,7 @@ def f_dia():
         dte_list = []
 
         for file in file_names:
-            dte_list.append(file.split('--')[0][-8:])
+            dte_list.append(file.split('_')[0][-2:]+'_'+file.split('_')[1]+'_'+file.split('_')[2][:2])
         date_format = "%m_%d_%y"  # Формат для преобразования
         date1 = datetime.datetime.strptime(dte_list[0], date_format)
         date2 = datetime.datetime.strptime(dte_list[1], date_format)

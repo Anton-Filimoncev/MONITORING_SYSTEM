@@ -1535,7 +1535,7 @@ def return_postion(csv_position_df, pos_type, risk_rate):
         print(postion_df)
         current_position = postion_df[['days_remaining', 'days_elapsed_TDE', '%_days_elapsed',
                                    'cost_to_close_market_cost', 'margin', 'current_PL',
-                                   'current_expected_return',
+                                   'current_expected_return', 'cvar',
                                    'pop', 'current_ROI', 'current_RR_ratio', 'PL_TDE', 'leverage',
                                    'max_profit']].T
         current_position, postion_df,  pl, marg, greeks_df, wight_df = return_position_prep(current_position, postion_df)
