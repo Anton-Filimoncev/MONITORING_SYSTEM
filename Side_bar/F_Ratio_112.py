@@ -421,23 +421,23 @@ def f_ratio_112():
             dte_list.append(file.split('_')[0][-2:] + '_' + file.split('_')[1] + '_' + file.split('_')[2][:2])
         date_format = "%m_%d_%y"  # Формат для преобразования
         date1 = datetime.datetime.strptime(dte_list[0], date_format)
-        date2 = datetime.datetime.strptime(dte_list[1], date_format)
+        date2 = datetime.datetime.strptime(dte_list[0], date_format)
 
         # Сравниваем даты
-        if date1 < date2:
-            short_df = pd.read_csv(f'{folder_path}/{file_names[0]}')
-            long_df = pd.read_csv(f'{folder_path}/{file_names[1]}')
-            print('short_df', file_names[0])
-            # Вычисляем разницу в днях
-            short_dte = (date1 - datetime.datetime.now()).days
-            long_dte = (date2 - datetime.datetime.now()).days
-        elif date1 > date2:
-            short_df = pd.read_csv(f'{folder_path}/{file_names[1]}')
-            print('short_df', file_names[1])
-            long_df = pd.read_csv(f'{folder_path}/{file_names[0]}')
-            # Вычисляем разницу в днях
-            short_dte = (date2 - datetime.datetime.now()).days
-            long_dte = (date1 - datetime.datetime.now()).days
+        # if date1 < date2:
+        short_df = pd.read_csv(f'{folder_path}/{file_names[0]}')
+        long_df = pd.read_csv(f'{folder_path}/{file_names[0]}')
+        print('short_df', file_names[0])
+        # Вычисляем разницу в днях
+        short_dte = (date1 - datetime.datetime.now()).days
+        long_dte = (date2 - datetime.datetime.now()).days
+        # elif date1 > date2:
+        #     short_df = pd.read_csv(f'{folder_path}/{file_names[1]}')
+        #     print('short_df', file_names[1])
+        #     long_df = pd.read_csv(f'{folder_path}/{file_names[0]}')
+        #     # Вычисляем разницу в днях
+        #     short_dte = (date2 - datetime.datetime.now()).days
+        #     long_dte = (date1 - datetime.datetime.now()).days
 
         barchart_button = st.button('Run')
         if barchart_button:
