@@ -29,6 +29,7 @@ with st.sidebar.expander('FUTURES'):
     infoType_F_DIA = st.checkbox("F. Diagonal")
     infoType_F_COVER = st.checkbox("F. Covered")
     infoType_F_RATIO_112 = st.checkbox("F. Ratio 112")
+    infoType_F_OTM_CALENDAR = st.checkbox("F. OTM Calendar")
 
     # infoType = st.radio(
     #     "Choose an info type",
@@ -76,6 +77,14 @@ if infoType_F_COVER:
 # =====================================   Ratio 112
 if infoType_F_RATIO_112:
     f_ratio_112()
+
+# =====================================   Ratio 112
+if infoType_F_RATIO_112:
+    f_ratio_112()
+
+# =====================================   OTM Calendar
+if infoType_F_OTM_CALENDAR:
+    f_otm_cal()
 
 # # ************************************* OPTIONS ***************************************
 #
