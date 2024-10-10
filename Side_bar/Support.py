@@ -806,7 +806,7 @@ def update_postion_cover(csv_position_df, pos_type, risk_rate, path_bento, input
             solo_position_calc_new(row, yahoo_price_df, row['iv_current'],
                                    row['days_to_exp'], min_dte, min_dte,
                                    row['underlying_current'], row['strike'],
-                                   row['prime_current']))
+                                   row['prime']))
         response[['cvar', 'exp_return']] = (response[['cvar', 'exp_return']] * np.abs(row['count']) * row['multiplier'])
 
         # ------  GREEKS  ------
