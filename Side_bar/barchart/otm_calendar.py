@@ -1418,8 +1418,6 @@ def gat_estimated_vol(df_data):
 
 def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate, percentage_array, multiplier):
 
-
-
     short_df = short_df[short_df['Type'] == side][:-1]
     short_df.columns = short_df.columns.str.lower()
     short_df['strike'] = short_df['strike'].str.replace('-', '.').replace('s', '')
@@ -1455,11 +1453,13 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
 
     exp_move = 0.5 * estimated_vol * underlying * math.sqrt(short_dte / 365)
 
+    if side == 'Put':
+        short_df = short_df[short_df['strike'] <= underlying]
+        long_df = long_df[long_df['strike'] <= underlying]
+    else:
+        short_df = short_df[short_df['strike'] >= underlying]
+        long_df = long_df[long_df['strike'] >= underlying]
 
-    short_df = short_df[short_df['strike'] >= (underlying - (exp_move*0.5))]
-    short_df = short_df[short_df['strike'] <= (underlying + (exp_move*0.5))]
-    long_df = long_df[long_df['strike'] >= (underlying - (exp_move*0.5))]
-    long_df = long_df[long_df['strike'] <= (underlying + (exp_move*0.5))]
 
     print('short_df')
     print(short_df)
@@ -1473,8 +1473,9 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
     for i, row1 in short_df.iterrows():
         for j, row2 in long_df.iterrows():
             # Создаём DataFrame из двух строк: одна из df1 и одна из df2
-            combined_df = pd.concat([row1.to_frame().T, row2.to_frame().T], axis=0)
-            combined_dfs.append(combined_df)
+            if row1['strike'] == row2['strike']:
+                combined_df = pd.concat([row1.to_frame().T, row2.to_frame().T], axis=0)
+                combined_dfs.append(combined_df)
 
     return_df = pd.DataFrame()
 
