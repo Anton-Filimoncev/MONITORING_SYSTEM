@@ -548,7 +548,9 @@ def price_vol_matrix_covered(df, dte):
             # print('hist_vol', hist_vol)
 
             # underlying_list = np.arange(current_price-(spread/2), current_price+spread, spread/0)
-            underlying_list = foo(current_price - (spread * 2), current_price + (spread * 2), 10)
+            # underlying_list = foo(current_price - (spread * 2), current_price + (spread * 2), 10)
+            underlying_list = foo(input_df['underlying'].min() - (spread * 2), input_df['underlying'].max() + (spread * 2), 10)
+
             # underlying_name = np.arange(-(spread/2), spread, spread/10)
             underlying_name = foo(-(spread * 2), (spread * 2), 10)
             prices_list.append(underlying_list)
