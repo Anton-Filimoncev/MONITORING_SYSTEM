@@ -1442,8 +1442,6 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
     long_df['count'] = 1
     long_df['days_to_exp'] = long_dte
 
-
-
     yahoo_data = yf.download(tick, progress=False)['2018-01-01':]
     underlying = yahoo_data['Close'].iloc[-1]
     long_df['underlying'] = underlying
@@ -1456,9 +1454,16 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
     if side == 'Put':
         short_df = short_df[short_df['strike'] <= underlying]
         long_df = long_df[long_df['strike'] <= underlying]
+
+        short_df = short_df[short_df['strike'] >= (underlying - (exp_move * 1.5))]
+        long_df = long_df[long_df['strike'] >= (underlying - (exp_move * 1.5))]
+
     else:
         short_df = short_df[short_df['strike'] >= underlying]
         long_df = long_df[long_df['strike'] >= underlying]
+
+        short_df = short_df[short_df['strike'] <= (underlying + (exp_move * 1.5))]
+        long_df = long_df[long_df['strike'] <= (underlying + (exp_move * 1.5))]
 
 
     print('short_df')
