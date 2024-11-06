@@ -287,7 +287,7 @@ def emulate_position(input_new_df, path, path_bento, risk_rate):
     current_price = yahoo_price_df['Close'].iloc[-1]
 
     if (pos_type == 'F. Covered' or pos_type == 'F. Strangle' or pos_type == 'F. Diagonal' or pos_type == 'F. Ratio 112'
-            or pos_type == 'F. Put/Call'):
+            or pos_type == 'F. Put/Call' or pos_type == 'F. OTM Calendar'):
         min_dte = input_new_df['days_to_exp'].min()
 
         response_df = pd.DataFrame()
@@ -504,6 +504,19 @@ def create_new_postion(input_new_df, path, path_bento, risk_rate):
                             index=False)
 
     if pos_type == 'F. Diagonal':
+
+        input_new_df['hv_200'] = hv
+        input_new_df = calc_position_open_update(input_new_df, yahoo_price_df, risk_rate)
+
+
+        input_new_df[['%_days_elapsed', 'current_ROI']] = input_new_df[['%_days_elapsed', 'current_ROI']] * 100
+
+        input_new_df = input_new_df.round(4)
+
+        input_new_df.to_csv(f"{path}{ticker}_{input_new_df['start_date'].values[0].strftime('%Y-%m-%d')}.csv",
+                            index=False)
+
+    if pos_type == 'F. OTM Calendar':
 
         input_new_df['hv_200'] = hv
         input_new_df = calc_position_open_update(input_new_df, yahoo_price_df, risk_rate)
@@ -1447,6 +1460,16 @@ def return_postion(csv_position_df, pos_type, risk_rate):
         return wight_df, greeks_df, pl, marg,  # greeks_df,
 
     if pos_type == 'F. Diagonal':
+        current_position = postion_df[['days_remaining', 'days_elapsed_TDE', '%_days_elapsed',
+                                       'cost_to_close_market_cost', 'margin', 'current_PL',
+                                       'current_expected_return', 'cvar', 'pop', 'current_ROI', 'PL_TDE',
+                                       'max_profit']].T
+
+        current_position, postion_df, pl, marg, greeks_df, wight_df = return_position_prep(current_position, postion_df)
+
+        return wight_df, greeks_df, pl, marg,  # greeks_df,
+
+    if pos_type == 'F. OTM Calendar':
         current_position = postion_df[['days_remaining', 'days_elapsed_TDE', '%_days_elapsed',
                                        'cost_to_close_market_cost', 'margin', 'current_PL',
                                        'current_expected_return', 'cvar', 'pop', 'current_ROI', 'PL_TDE',

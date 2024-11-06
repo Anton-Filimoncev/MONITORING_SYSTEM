@@ -1449,7 +1449,7 @@ def barchart_selection(short_df, long_df, side, short_dte, long_dte, tick, rate,
 
     estimated_vol = gat_estimated_vol(yahoo_data)
 
-    exp_move = 0.5 * estimated_vol * underlying * math.sqrt(short_dte / 365)
+    exp_move = estimated_vol * underlying * math.sqrt(short_dte / 365)
 
     if side == 'Put':
         short_df = short_df[short_df['strike'] <= underlying]
