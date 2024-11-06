@@ -88,7 +88,7 @@ def f_otm_cal():
         days_to_expiration_long = (end_date_stat_long - datetime.datetime.now().date()).days
         print('days_to_expiration_short', days_to_expiration_short)
         print('days_to_expiration_long', days_to_expiration_long)
-        # ---- OPTION ---
+        # ---- OPTION ----
         df_short = pd.DataFrame({
             'position_type': ['F. OTM Calendar'],
             'symbol': [ticker],
