@@ -8,6 +8,7 @@ from .matrix  import price_vol_matrix, price_vol_matrix_covered
 from .SELECTION.Support_Selection import *
 from .databentos.get_databento import get_bento_data
 from .SELECTION.MARKET_DATA import *
+from .barchart.put_call import barchart_selection
 
 def f_put_call():
 
@@ -226,112 +227,159 @@ def f_put_call():
             my_bar.empty()
             # submit_button = st.form_submit_button(f'Commit_{num}' )
 
-    # -----------------------------
-    # ----------SELECTION----------
-    # -----------------------------
+    # # -----------------------------
+    # # ----------SELECTION----------
+    # # -----------------------------
+    #
+    # st.header('-'*10 + 'SELECTION' + '-'*10)
+    #
+    # col1, col2, col3 = st.columns(3)
+    #
+    # with col1:
+    #     ticker = st.text_input('Ticker', 'CL=F')
+    #     ticker_b = st.text_input('Ticker Bento', 'LO')
+    #
+    # with col2:
+    #     position_type = st.radio("Choose a position type", ('Put', 'Call'), horizontal=True)
+    #     side = st.radio("Choose a position type", ('Short', 'Long'), horizontal=True)
+    # with col3:
+    #     nearest_dte = st.number_input('Nearest DTE', step=1, min_value=1, max_value=50000, value=45)
+    #
+    # if 'quotes' not in st.session_state:
+    #     st.session_state['quotes'] = np.nan
+    #
+    # if 'needed_exp_date' not in st.session_state:
+    #     st.session_state['needed_exp_date'] = np.nan
+    #
+    # data_type = "OPTIONS"
+    # if '-' in tick or '=' in tick:
+    #     data_type = "FUTURES"
+    #
+    # if data_type == "OPTIONS":
+    #     instr_type = 'OPT'
+    #     side_type = 'P'
+    #     if dia_type == 'CALL':
+    #         side_type = 'C'
+    #     if st.button("GET MARKET DATA", type="primary"):
+    #         needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
+    #         quotes = hedginglab_get_quotes(ticker, nearest_dte)
+    #         quotes['iv'] = quotes['iv'] * 100
+    #         # st.text(dte)
+    #         st.text('Exp Date: ' + str(needed_exp_date.date()))
+    #         # st.dataframe(quotes)
+    #         st.session_state['quotes'] = quotes
+    #         st.session_state['needed_exp_date'] = needed_exp_date
+    #         st.success('Market Data Downloaded!')
+    #
+    # if data_type == "FUTURES":
+    #     instr_type = 'FUT'
+    #
+    #     side_type = 'P'
+    #     if dia_type == 'CALL':
+    #         side_type = 'C'
+    #
+    #     if st.button("GET BENTO DATA", type="primary"):
+    #         needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, side_type, path_bento)
+    #         quotes['iv'] = quotes['iv'] * 100
+    #         # st.text(dte)
+    #         st.text('Exp Date: ' + str(needed_exp_date.date()))
+    #         # st.dataframe(quotes)
+    #         st.session_state['quotes'] = quotes
+    #         st.session_state['needed_exp_date'] = needed_exp_date
+    #         st.success('Market Data Downloaded!')
+    #
+    # quotes = st.session_state['quotes']
+    #
+    # needed_exp_date = st.session_state['needed_exp_date']
+    #
+    # col11, col12, col13 = st.columns(3)
+    # with col11:
+    #     rate = st.number_input('Risk Rate', step=0.01, format="%.2f", min_value=0., max_value=50000.,  value=4.)
+    # with col12:
+    #     percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=50000, value=50)
+    #     try:
+    #         days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
+    #     except:
+    #         days_to_expiration = np.nan #st.date_input('EXP date')
+    #
+    # with col13:
+    #     try:
+    #         closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
+    #                                              value=int(days_to_expiration))
+    #     except:
+    #         closing_days_array = st.number_input('Closing Days Proba')
+    #
+    # if side == 'Short':
+    #     if st.button("Calculate", type="primary"):
+    #         print('quotes')
+    #         print(quotes)
+    #         short_data, best_df, exp_move_hv, exp_move_iv = get_short(ticker, rate, days_to_expiration,
+    #                                                                   closing_days_array, percentage_array,
+    #                                                                   position_type, quotes, instr_type)
+    #
+    #         st.text('Best Parameters:')
+    #         st.dataframe(best_df[['pop', 'exp_return', 'cvar', 'Strike']], hide_index=True, column_config=None)
+    #         st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
+    #         st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))
+    #         st.text('Total Parameters:')
+    #         st.dataframe(short_data, hide_index=True, column_config=None)
+    # else:
+    #     if st.button("Calculate", type="primary"):
+    #         print('quotes')
+    #         print(quotes)
+    #         short_data, best_df, exp_move_hv, exp_move_iv = get_long(ticker, rate, days_to_expiration,
+    #                                                                   closing_days_array, percentage_array,
+    #                                                                   position_type, quotes, instr_type)
+    #
+    #         st.text('Best Parameters:')
+    #         st.dataframe(best_df[['pop', 'exp_return', 'cvar', 'Strike']], hide_index=True, column_config=None)
+    #         st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
+    #         st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))
+    #         st.text('Total Parameters:')
+    #         st.dataframe(short_data, hide_index=True, column_config=None)
 
-    st.header('-'*10 + 'SELECTION' + '-'*10)
 
-    col1, col2, col3 = st.columns(3)
+    # =================
+    # ================= BARCHART
+    # =================
+    infoType_barchart = st.checkbox("~~ BARCHART ~~")
 
-    with col1:
-        ticker = st.text_input('Ticker', 'CL=F')
-        ticker_b = st.text_input('Ticker Bento', 'LO')
+    if infoType_barchart:
+        col111, col121, col131, col141 = st.columns(4)
+        with col111:
+            tick = st.text_input('Ticker', 'ZC=F')
+            side = st.selectbox(
+                "TYPE",
+                ("Put", "Call"),
+                index=None,
+                placeholder="Select TYPE...",
+            )
+        with col121:
+            rate = st.number_input('Risk Rate', step=0.5, format="%.1f", min_value=1., max_value=5000., value=4.8)
+            side_pos = st.radio("Choose a position type", ('Short', 'Long'), horizontal=True)
+        with col131:
+            percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
 
-    with col2:
-        position_type = st.radio("Choose a position type", ('Put', 'Call'), horizontal=True)
-        side = st.radio("Choose a position type", ('Short', 'Long'), horizontal=True)
-    with col3:
-        nearest_dte = st.number_input('Nearest DTE', step=1, min_value=1, max_value=50000, value=45)
+        with col141:
+            multiplier = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
 
-    if 'quotes' not in st.session_state:
-        st.session_state['quotes'] = np.nan
+        folder_path = 'Side_bar/BARCHART_DATA/diagonal'  # Замените на путь к вашей папке
+        file_names = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
+        dte_list = []
 
-    if 'needed_exp_date' not in st.session_state:
-        st.session_state['needed_exp_date'] = np.nan
+        for file in file_names:
+            dte_list.append(file.split('_')[0][-2:] + '_' + file.split('_')[1] + '_' + file.split('_')[2][:2])
+        date_format = "%m_%d_%y"  # Формат для преобразования
+        date1 = datetime.datetime.strptime(dte_list[0], date_format)
 
-    data_type = "OPTIONS"
-    if '-' in tick or '=' in tick:
-        data_type = "FUTURES"
+        main_df = pd.read_csv(f'{folder_path}/{file_names[1]}')
+        print('main_df', file_names[1])
+        # Вычисляем разницу в днях
+        main_dte = (date1 - datetime.datetime.now()).days
 
-    if data_type == "OPTIONS":
-        instr_type = 'OPT'
-        side_type = 'P'
-        if dia_type == 'CALL':
-            side_type = 'C'
-        if st.button("GET MARKET DATA", type="primary"):
-            needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
-            quotes = hedginglab_get_quotes(ticker, nearest_dte)
-            quotes['iv'] = quotes['iv'] * 100
-            # st.text(dte)
-            st.text('Exp Date: ' + str(needed_exp_date.date()))
-            # st.dataframe(quotes)
-            st.session_state['quotes'] = quotes
-            st.session_state['needed_exp_date'] = needed_exp_date
-            st.success('Market Data Downloaded!')
 
-    if data_type == "FUTURES":
-        instr_type = 'FUT'
-
-        side_type = 'P'
-        if dia_type == 'CALL':
-            side_type = 'C'
-
-        if st.button("GET BENTO DATA", type="primary"):
-            needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, side_type, path_bento)
-            quotes['iv'] = quotes['iv'] * 100
-            # st.text(dte)
-            st.text('Exp Date: ' + str(needed_exp_date.date()))
-            # st.dataframe(quotes)
-            st.session_state['quotes'] = quotes
-            st.session_state['needed_exp_date'] = needed_exp_date
-            st.success('Market Data Downloaded!')
-
-    quotes = st.session_state['quotes']
-    needed_exp_date = st.session_state['needed_exp_date']
-
-    col11, col12, col13 = st.columns(3)
-    with col11:
-        rate = st.number_input('Risk Rate', step=0.01, format="%.2f", min_value=0., max_value=50000.,  value=4.)
-    with col12:
-        percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=50000, value=50)
-        try:
-            days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
-        except:
-            days_to_expiration = np.nan #st.date_input('EXP date')
-
-    with col13:
-        try:
-            closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
-                                                 value=int(days_to_expiration))
-        except:
-            closing_days_array = st.number_input('Closing Days Proba')
-
-    if side == 'Short':
-        if st.button("Calculate", type="primary"):
-            print('quotes')
-            print(quotes)
-            short_data, best_df, exp_move_hv, exp_move_iv = get_short(ticker, rate, days_to_expiration,
-                                                                      closing_days_array, percentage_array,
-                                                                      position_type, quotes, instr_type)
-
-            st.text('Best Parameters:')
-            st.dataframe(best_df[['pop', 'exp_return', 'cvar', 'Strike']], hide_index=True, column_config=None)
-            st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
-            st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))
-            st.text('Total Parameters:')
-            st.dataframe(short_data, hide_index=True, column_config=None)
-    else:
-        if st.button("Calculate", type="primary"):
-            print('quotes')
-            print(quotes)
-            short_data, best_df, exp_move_hv, exp_move_iv = get_long(ticker, rate, days_to_expiration,
-                                                                      closing_days_array, percentage_array,
-                                                                      position_type, quotes, instr_type)
-
-            st.text('Best Parameters:')
-            st.dataframe(best_df[['pop', 'exp_return', 'cvar', 'Strike']], hide_index=True, column_config=None)
-            st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
-            st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))
-            st.text('Total Parameters:')
-            st.dataframe(short_data, hide_index=True, column_config=None)
+        barchart_button = st.button('Run')
+        if barchart_button:
+            return_df, best_df = barchart_selection(main_df, side, side_pos, main_dte, tick, rate, percentage_array, multiplier)
+            st.dataframe(best_df, hide_index=True, column_config=None)
+            st.dataframe(return_df, hide_index=True, column_config=None)

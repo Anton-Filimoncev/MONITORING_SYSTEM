@@ -17,7 +17,7 @@ def f_ratio_112():
     path_bento = 'Side_bar/databentos/req/'
     filenames = glob.glob(path + "*.csv")
 
-    with st.form(key='main_form'):
+    with st.form('main_form_112'):
 
         col1, col2, col3 = st.columns([6,1,1])
         with col1:
@@ -304,92 +304,96 @@ def f_ratio_112():
                 # submit_button = st.form_submit_button(f'Commit_{num}' )
 
 
-    # ===========================================
-    # =====================================     SELECTION  ======================
-    # ===========================================
+    # # ===========================================
+    # # =====================================     SELECTION  ======================
+    # # ===========================================
+    #
+    # st.header('-'*10 + 'SELECTION' + '-'*10)
+    # with st.container():
+    #     col91, col92, col93 = st.columns([1, 1, 1])
+    #     with col91:
+    #         ticker = st.text_input('Ticker', 'CL=F')
+    #         ticker_b = st.text_input('Ticker Bento', 'LO')
+    #     with col92:
+    #         nearest_dte = st.number_input('Days to EXP', step=1, min_value=0, max_value=50000, value=90)
+    #     with col93:
+    #         data_type = st.radio('Instrument Type', ["OPTIONS", "FUTURES"])
+    #
+    #     long_count = 1
+    #     short_1_count = 1
+    #     short_2_count = 2
+    #
+    #     if 'quotes' not in st.session_state:
+    #         st.session_state['quotes'] = np.nan
+    #
+    #     if 'needed_exp_date' not in st.session_state:
+    #         st.session_state['needed_exp_date'] = np.nan
+    #
+    #     path_bento = 'Side_bar/databentos/req/' # C:/Users/itmed/OneDrive/Desktop/invest/POP_STRAT_STREAM/
+    #
+    #     if data_type == "OPTIONS":
+    #         instr_type = 'OPT'
+    #         side_type = 'P'
+    #         if dia_type == 'CALL':
+    #             side_type = 'C'
+    #         if st.button("GET MARKET DATA", type="primary"):
+    #             needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
+    #             quotes = hedginglab_get_quotes(ticker, nearest_dte)
+    #             quotes['iv'] = quotes['iv'] * 100
+    #             # st.text(dte)
+    #             st.text('Exp Date: ' + str(needed_exp_date.date()))
+    #             # st.dataframe(quotes)
+    #             st.session_state['quotes'] = quotes
+    #             st.session_state['needed_exp_date'] = needed_exp_date
+    #             st.success('Market Data Downloaded!')
+    #
+    #     if data_type == "FUTURES":
+    #         instr_type = 'FUT'
+    #         side_type = 'P'
+    #         if dia_type == 'CALL':
+    #             side_type = 'C'
+    #         if st.button("GET BENTO DATA", type="primary"):
+    #             needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, side_type, path_bento)
+    #             quotes['iv'] = quotes['iv'] * 100
+    #             # st.text(dte)
+    #             st.text('Exp Date: ' + str(needed_exp_date.date()))
+    #             # st.dataframe(quotes)
+    #             st.session_state['quotes'] = quotes
+    #             st.session_state['needed_exp_date'] = needed_exp_date
+    #             st.success('Market Data Downloaded!')
+    #
+    #     quotes = st.session_state['quotes']
+    #     needed_exp_date = st.session_state['needed_exp_date']
+    #
+    #     print(needed_exp_date)
+    #
+    #     # try:
+    #
+    #     try:
+    #         days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
+    #     except:
+    #         days_to_expiration = np.nan  # st.date_input('EXP date')
+    #
+    #     try:
+    #         closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
+    #                                              value=int(days_to_expiration))
+    #     except:
+    #         closing_days_array = st.number_input('Closing Days Proba')
+    #
+    #     if st.button("Calculate", type="primary"):
+    #
+    #         da_ratio_112_data = get_ratio_112(ticker, risk_rate,  days_to_expiration,
+    #                                       closing_days_array, percentage_array, quotes,  long_count, short_1_count,
+    #                                       short_2_count, side_type, instr_type)
+    #
+    #         st.text('Parameters:')
+    #         st.dataframe(da_ratio_112_data, hide_index=True, column_config=None)
+    #         # st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
+    #         # st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))
 
-    st.header('-'*10 + 'SELECTION' + '-'*10)
-    with st.container():
-        col91, col92, col93 = st.columns([1, 1, 1])
-        with col91:
-            ticker = st.text_input('Ticker', 'CL=F')
-            ticker_b = st.text_input('Ticker Bento', 'LO')
-        with col92:
-            nearest_dte = st.number_input('Days to EXP', step=1, min_value=0, max_value=50000, value=90)
-        with col93:
-            data_type = st.radio('Instrument Type', ["OPTIONS", "FUTURES"])
-
-        long_count = 1
-        short_1_count = 1
-        short_2_count = 2
-
-        if 'quotes' not in st.session_state:
-            st.session_state['quotes'] = np.nan
-
-        if 'needed_exp_date' not in st.session_state:
-            st.session_state['needed_exp_date'] = np.nan
-
-        path_bento = 'Side_bar/databentos/req/' # C:/Users/itmed/OneDrive/Desktop/invest/POP_STRAT_STREAM/
-
-        if data_type == "OPTIONS":
-            instr_type = 'OPT'
-            side_type = 'P'
-            if dia_type == 'CALL':
-                side_type = 'C'
-            if st.button("GET MARKET DATA", type="primary"):
-                needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
-                quotes = hedginglab_get_quotes(ticker, nearest_dte)
-                quotes['iv'] = quotes['iv'] * 100
-                # st.text(dte)
-                st.text('Exp Date: ' + str(needed_exp_date.date()))
-                # st.dataframe(quotes)
-                st.session_state['quotes'] = quotes
-                st.session_state['needed_exp_date'] = needed_exp_date
-                st.success('Market Data Downloaded!')
-
-        if data_type == "FUTURES":
-            instr_type = 'FUT'
-            side_type = 'P'
-            if dia_type == 'CALL':
-                side_type = 'C'
-            if st.button("GET BENTO DATA", type="primary"):
-                needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, side_type, path_bento)
-                quotes['iv'] = quotes['iv'] * 100
-                # st.text(dte)
-                st.text('Exp Date: ' + str(needed_exp_date.date()))
-                # st.dataframe(quotes)
-                st.session_state['quotes'] = quotes
-                st.session_state['needed_exp_date'] = needed_exp_date
-                st.success('Market Data Downloaded!')
-
-        quotes = st.session_state['quotes']
-        needed_exp_date = st.session_state['needed_exp_date']
-
-        print(needed_exp_date)
-
-        # try:
-
-        try:
-            days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
-        except:
-            days_to_expiration = np.nan  # st.date_input('EXP date')
-
-        try:
-            closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
-                                                 value=int(days_to_expiration))
-        except:
-            closing_days_array = st.number_input('Closing Days Proba')
-
-        if st.button("Calculate", type="primary"):
-
-            da_ratio_112_data = get_ratio_112(ticker, risk_rate,  days_to_expiration,
-                                          closing_days_array, percentage_array, quotes,  long_count, short_1_count,
-                                          short_2_count, side_type, instr_type)
-
-            st.text('Parameters:')
-            st.dataframe(da_ratio_112_data, hide_index=True, column_config=None)
-            # st.text('Expected Move HV: ' + str(round(exp_move_hv, 3)))
-            # st.text('Expected Move IV: ' + str(round(exp_move_iv, 3)))
+    # # ===========================================
+    # # =====================================     BARCHART  ======================
+    # # ===========================================
 
     infoType_barchart = st.checkbox("~~ BARCHART ~~")
     # try:

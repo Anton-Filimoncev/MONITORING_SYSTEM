@@ -78,10 +78,6 @@ if infoType_F_COVER:
 if infoType_F_RATIO_112:
     f_ratio_112()
 
-# =====================================   Ratio 112
-if infoType_F_RATIO_112:
-    f_ratio_112()
-
 # =====================================   OTM Calendar
 if infoType_F_OTM_CALENDAR:
     f_otm_cal()
