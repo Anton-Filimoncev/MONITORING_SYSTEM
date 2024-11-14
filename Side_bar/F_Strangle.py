@@ -8,6 +8,8 @@ from .matrix import price_vol_matrix, price_vol_matrix_covered
 from .SELECTION.MARKET_DATA import *
 from .SELECTION.strang_select import *
 from .databentos.get_databento import get_bento_data
+from .barchart.strangle import barchart_selection
+import os
 
 
 def f_strangle():
@@ -269,88 +271,127 @@ def f_strangle():
             # submit_button = st.form_submit_button(f'Commit_{num}' )
 
 
-    st.header('-'*10 + 'SELECTION' + '-'*10)
-    with st.container():
+    # st.header('-'*10 + 'SELECTION' + '-'*10)
+    # with st.container():
+    #
+    #     col1, col2, col3 = st.columns(3)
+    #
+    #     with col1:
+    #         ticker = st.text_input('Ticker', 'CL=F')
+    #         ticker_b = st.text_input('Ticker Bento', 'LO')
+    #     with col2:
+    #         nearest_dte = st.number_input('Nearest DTE', step=1, min_value=1, max_value=50000, value=90)
+    #     with col3:
+    #         data_type = st.radio('Instrument Type', ["OPTIONS", "FUTURES"])
+    #
+    #     if 'quotes' not in st.session_state:
+    #         st.session_state['quotes'] = np.nan
+    #
+    #     if 'needed_exp_date' not in st.session_state:
+    #         st.session_state['needed_exp_date'] = np.nan
+    #
+    #     path_bento = 'Side_bar/databentos/req/'
+    #
+    #
+    #     if data_type == "OPTIONS":
+    #         instr_type = 'OPT'
+    #         if st.button("GET MARKET DATA", type="primary"):
+    #             needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
+    #             quotes = hedginglab_get_quotes(ticker, nearest_dte)
+    #             quotes['iv'] = quotes['iv'] * 100
+    #             # st.text(dte)
+    #             st.text('Exp Date: ' + str(needed_exp_date.date()))
+    #             # st.dataframe(quotes)
+    #             st.session_state['quotes'] = quotes
+    #             st.session_state['needed_exp_date'] = needed_exp_date
+    #             st.success('Market Data Downloaded!')
+    #
+    #     if data_type == "FUTURES":
+    #         instr_type = 'FUT'
+    #         if st.button("GET BENTO DATA", type="primary"):
+    #             needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, 'Strangle', path_bento)
+    #             quotes['iv'] = quotes['iv'] * 100
+    #             # st.text(dte)
+    #             st.text('Exp Date: ' + str(needed_exp_date.date()))
+    #             # st.dataframe(quotes)
+    #             st.session_state['quotes'] = quotes
+    #             st.session_state['needed_exp_date'] = needed_exp_date
+    #             st.success('Market Data Downloaded!')
+    #
+    #     quotes = st.session_state['quotes']
+    #     needed_exp_date = st.session_state['needed_exp_date']
+    #
+    #     if '-' in ticker or '=' in ticker:
+    #         try:
+    #             days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
+    #         except:
+    #             days_to_expiration = np.nan  # st.date_input('EXP date')
+    #     else:
+    #         try:
+    #             days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
+    #         except:
+    #             days_to_expiration = np.nan  # st.date_input('EXP date')
+    #
+    #     col11, col12, col13 = st.columns(3)
+    #     with col11:
+    #         rate = st.number_input('Risk Rate', step=0.01, format="%.2f", min_value=0., max_value=50000., value=4.)
+    #     with col12:
+    #         percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=50000, value=50)
+    #
+    #     with col13:
+    #         try:
+    #             closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
+    #                                                  value=int(days_to_expiration))
+    #         except:
+    #             closing_days_array = st.number_input('Closing Days Proba')
+    #     #
+    #     # if submit_button_select:
+    #     #     st.success('Success commit!')
+    #
+    #     if st.button("Calculate", type="primary"):
+    #         print('quotes')
+    #         print(quotes)
+    #
+    #         strengle_data = get_strangle(ticker, rate, percentage_array, days_to_expiration, closing_days_array, quotes)
+    #
+    #         st.text('Best Parameters:')
+    #         st.dataframe(strengle_data, hide_index=True, column_config=None)
 
-        col1, col2, col3 = st.columns(3)
+    # =================
+    # ================= BARCHART
+    # =================
+    infoType_barchart = st.checkbox("~~ BARCHART ~~")
 
-        with col1:
-            ticker = st.text_input('Ticker', 'CL=F')
-            ticker_b = st.text_input('Ticker Bento', 'LO')
-        with col2:
-            nearest_dte = st.number_input('Nearest DTE', step=1, min_value=1, max_value=50000, value=90)
-        with col3:
-            data_type = st.radio('Instrument Type', ["OPTIONS", "FUTURES"])
+    if infoType_barchart:
+        col111, col121, col131, col141 = st.columns(4)
+        with col111:
+            tick = st.text_input('Ticker', 'ZC=F')
 
-        if 'quotes' not in st.session_state:
-            st.session_state['quotes'] = np.nan
+        with col121:
+            rate = st.number_input('Risk Rate', step=0.5, format="%.1f", min_value=1., max_value=5000., value=4.8)
 
-        if 'needed_exp_date' not in st.session_state:
-            st.session_state['needed_exp_date'] = np.nan
+        with col131:
+            percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=5000, value=30)
 
-        path_bento = 'Side_bar/databentos/req/'
+        with col141:
+            multiplier = st.number_input('Multiplicator', min_value=1, max_value=1000000, value=100)
 
+        folder_path = 'Side_bar/BARCHART_DATA/strangle'  # Замените на путь к вашей папке
+        file_names = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
+        dte_list = []
 
-        if data_type == "OPTIONS":
-            instr_type = 'OPT'
-            if st.button("GET MARKET DATA", type="primary"):
-                needed_exp_date, dte = hedginglab_get_exp_date(ticker, nearest_dte)
-                quotes = hedginglab_get_quotes(ticker, nearest_dte)
-                quotes['iv'] = quotes['iv'] * 100
-                # st.text(dte)
-                st.text('Exp Date: ' + str(needed_exp_date.date()))
-                # st.dataframe(quotes)
-                st.session_state['quotes'] = quotes
-                st.session_state['needed_exp_date'] = needed_exp_date
-                st.success('Market Data Downloaded!')
+        for file in file_names:
+            dte_list.append(file.split('_')[0][-2:] + '_' + file.split('_')[1] + '_' + file.split('_')[2][:2])
+        date_format = "%m_%d_%y"  # Формат для преобразования
+        date1 = datetime.datetime.strptime(dte_list[0], date_format)
 
-        if data_type == "FUTURES":
-            instr_type = 'FUT'
-            if st.button("GET BENTO DATA", type="primary"):
-                needed_exp_date, quotes = get_bento_data(ticker, ticker_b, nearest_dte, 'Strangle', path_bento)
-                quotes['iv'] = quotes['iv'] * 100
-                # st.text(dte)
-                st.text('Exp Date: ' + str(needed_exp_date.date()))
-                # st.dataframe(quotes)
-                st.session_state['quotes'] = quotes
-                st.session_state['needed_exp_date'] = needed_exp_date
-                st.success('Market Data Downloaded!')
+        main_df = pd.read_csv(f'{folder_path}/{file_names[0]}')
+        print('main_df', file_names[0])
+        # Вычисляем разницу в днях
+        main_dte = (date1 - datetime.datetime.now()).days
 
-        quotes = st.session_state['quotes']
-        needed_exp_date = st.session_state['needed_exp_date']
-
-        if '-' in ticker or '=' in ticker:
-            try:
-                days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
-            except:
-                days_to_expiration = np.nan  # st.date_input('EXP date')
-        else:
-            try:
-                days_to_expiration = (needed_exp_date - datetime.datetime.now()).days
-            except:
-                days_to_expiration = np.nan  # st.date_input('EXP date')
-
-        col11, col12, col13 = st.columns(3)
-        with col11:
-            rate = st.number_input('Risk Rate', step=0.01, format="%.2f", min_value=0., max_value=50000., value=4.)
-        with col12:
-            percentage_array = st.number_input('Percentage', step=1, min_value=1, max_value=50000, value=50)
-
-        with col13:
-            try:
-                closing_days_array = st.number_input('Closing Days Proba', step=1, min_value=0, max_value=50000,
-                                                     value=int(days_to_expiration))
-            except:
-                closing_days_array = st.number_input('Closing Days Proba')
-        #
-        # if submit_button_select:
-        #     st.success('Success commit!')
-
-        if st.button("Calculate", type="primary"):
-            print('quotes')
-            print(quotes)
-
-            strengle_data = get_strangle(ticker, rate, percentage_array, days_to_expiration, closing_days_array, quotes)
-
-            st.text('Best Parameters:')
-            st.dataframe(strengle_data, hide_index=True, column_config=None)
+        barchart_button = st.button('Run')
+        if barchart_button:
+            return_df, best_df = barchart_selection(main_df, main_dte, tick, rate, percentage_array, multiplier)
+            st.dataframe(best_df, hide_index=True, column_config=None)
+            st.dataframe(return_df, hide_index=True, column_config=None)
