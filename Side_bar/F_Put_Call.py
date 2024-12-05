@@ -373,7 +373,7 @@ def f_put_call():
         date1 = datetime.datetime.strptime(dte_list[0], date_format)
 
         main_df = pd.read_csv(f'{folder_path}/{file_names[1]}')
-        print('main_df', file_names[1])
+        print('main_df ', file_names[1])
         # Вычисляем разницу в днях
         main_dte = (date1 - datetime.datetime.now()).days
 

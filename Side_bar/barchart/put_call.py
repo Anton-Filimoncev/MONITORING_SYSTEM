@@ -1423,7 +1423,7 @@ def barchart_selection(main_df, side, side_pos, dte, tick, rate, percentage_arra
     main_df['strike'] = main_df['strike'].str.replace('-', '.').replace('s', '')
     # short_df['last'] = short_df['last'].str.replace('-', '.').replace('s', '')
     main_df['iv'] = main_df['iv'].str.replace('%', '')
-    print(main_df[['strike', 'last', 'iv']])
+    print(main_df[['strike', 'last']])
     main_df[['strike', 'last', 'iv']] = main_df[['strike', 'last', 'iv']].astype('float')
     main_df['side'] = side
     main_df['count'] = -2
